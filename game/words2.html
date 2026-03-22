@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Words Game</title>
+  <style>
+    body{
+      font-family:Arial, sans-serif;
+      margin:0;
+      background:#f7f9ff;
+      color:#222;
+    }
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:20px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .row{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .lesson-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+    }
+
+    .lesson-card{
+      background:#eef3ff;
+      border-radius:14px;
+      padding:16px;
+    }
+
+    .items-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+      gap:14px;
+      margin-top:16px;
+    }
+
+    .item-card{
+      background:#fff;
+      border:1px solid #e4e8f2;
+      border-radius:14px;
+      padding:12px;
+      text-align:center;
+    }
+
+    .item-card img{
+      width:120px;
+      height:120px;
+      object-fit:contain;
+      background:#f4f4f4;
+      border-radius:12px;
+      display:block;
+      margin:0 auto 10px;
+    }
+
+    button{
+      padding:10px 14px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      background:#3f6df6;
+      color:#fff;
+      font-weight:600;
+    }
+
+    .muted{ color:#666; }
+    .success{ color:#0a8a35; font-weight:600; }
+    .error{ color:#c62828; font-weight:600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <div>
+          <h1 style="margin:0 0 8px 0;">Words Game</h1>
+          <div id="auth-status" class="muted">Checking login…</div>
+        </div>
+        <div>
+          <a href="../index.html">
+            <button type="button">Back Home</button>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <h2 style="margin:0;">My Lessons</h2>
+        <button id="refresh-lessons-btn" type="button">Refresh</button>
+      </div>
+      <div id="lessons-status" class="muted" style="margin-top:10px;">Loading lessons…</div>
+      <div id="lesson-list" class="lesson-list" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="current-lesson-title">Lesson Preview</h2>
+      <div id="lesson-preview-status" class="muted">Choose a lesson.</div>
+      <div id="items-grid" class="items-grid"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      bootAuth,
+      getSavedUser,
+      getLessons,
+      getImageUrl,
+      setSessionExpiredHandler
+    } from "./js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    let lessonsCache = [];
+    let currentLesson = null;
+
+    function setStatus(id, text, type = "muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function renderAuth(user = null){
+      if(user){
+        setStatus("auth-status", `Logged in as ${user.display_name || user.email}`, "success");
+      }else{
+        setStatus("auth-status", "Not logged in. Please login on the home page.", "error");
+      }
+    }
+
+    function normalizeItems(items){
+      return (items || []).map(item => ({
+        word: item.word || "",
+        image: item.image || null,
+        imageVersion: item.imageVersion || item.image_version || ""
+      }));
+    }
+
+    function renderLessons(){
+      const list = qs("lesson-list");
+      list.innerHTML = "";
+
+      if(!lessonsCache.length){
+        setStatus("lessons-status", "No lessons found.", "muted");
+        return;
+      }
+
+      setStatus("lessons-status", `${lessonsCache.length} lesson(s) found.`, "success");
+
+      lessonsCache.forEach((lesson) => {
+        const count = lesson?.data_json?.items?.length || 0;
+
+        const div = document.createElement("div");
+        div.className = "lesson-card";
+        div.innerHTML = `
+          <h3>${lesson.title}</h3>
+          <div class="muted" style="margin-bottom:12px;">
+            ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+          </div>
+          <button class="open-lesson-btn" data-id="${lesson.id}">
+            Open Lesson
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderLessonPreview(){
+      const grid = qs("items-grid");
+      grid.innerHTML = "";
+
+      if(!currentLesson){
+        qs("current-lesson-title").textContent = "Lesson Preview";
+        setStatus("lesson-preview-status", "Choose a lesson.", "muted");
+        return;
+      }
+
+      qs("current-lesson-title").textContent = currentLesson.title || "Lesson";
+      setStatus("lesson-preview-status", "Lesson loaded.", "success");
+
+      const items = normalizeItems(currentLesson?.data_json?.items || []);
+
+      if(!items.length){
+        setStatus("lesson-preview-status", "This lesson has no items yet.", "muted");
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "item-card";
+
+        card.innerHTML = `
+          ${
+            item.image?.thumb
+              ? `<img src="${getImageUrl(item.image.thumb, item.imageVersion)}" alt="${item.word || ""}" />`
+              : `<div style="width:120px;height:120px;margin:0 auto 10px;background:#f4f4f4;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#888;">No image</div>`
+          }
+          <div><strong>${item.word || "(empty)"}</strong></div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    async function loadLessons(){
+      try{
+        const res = await getLessons();
+        lessonsCache = Array.isArray(res.lessons) ? res.lessons : [];
+        renderLessons();
+      }catch(err){
+        setStatus("lessons-status", err.message || "Could not load lessons.", "error");
+      }
+    }
+
+    function openLesson(lessonId){
+      currentLesson = lessonsCache.find(l => l.id === lessonId) || null;
+      renderLessonPreview();
+    }
+
+    async function initPage(){
+      const savedUser = getSavedUser();
+      renderAuth(savedUser || null);
+
+      const auth = await bootAuth();
+      renderAuth(auth.user || null);
+
+      if(auth.ok){
+        await loadLessons();
+      }else{
+        setStatus("lessons-status", "Please login first on the home page.", "error");
+      }
+    }
+
+    function handleSessionExpired(){
+      renderAuth(null);
+      setStatus("lessons-status", "Session expired. Please login again.", "error");
+      setStatus("lesson-preview-status", "Session expired.", "error");
+    }
+
+    setSessionExpiredHandler(handleSessionExpired);
+
+    qs("refresh-lessons-btn").addEventListener("click", loadLessons);
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".open-lesson-btn");
+      if(btn){
+        openLesson(btn.dataset.id);
+      }
+    });
+
+    initPage();
+  </script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Words Game</title>
+  <style>
+    body{
+      font-family:Arial, sans-serif;
+      margin:0;
+      background:#f7f9ff;
+      color:#222;
+    }
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:20px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .row{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .lesson-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+    }
+
+    .lesson-card{
+      background:#eef3ff;
+      border-radius:14px;
+      padding:16px;
+    }
+
+    .items-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+      gap:14px;
+      margin-top:16px;
+    }
+
+    .item-card{
+      background:#fff;
+      border:1px solid #e4e8f2;
+      border-radius:14px;
+      padding:12px;
+      text-align:center;
+    }
+
+    .item-card img{
+      width:120px;
+      height:120px;
+      object-fit:contain;
+      background:#f4f4f4;
+      border-radius:12px;
+      display:block;
+      margin:0 auto 10px;
+    }
+
+    button{
+      padding:10px 14px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      background:#3f6df6;
+      color:#fff;
+      font-weight:600;
+    }
+
+    .muted{ color:#666; }
+    .success{ color:#0a8a35; font-weight:600; }
+    .error{ color:#c62828; font-weight:600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <div>
+          <h1 style="margin:0 0 8px 0;">Words Game</h1>
+          <div id="auth-status" class="muted">Checking login…</div>
+        </div>
+        <div>
+          <a href="../index.html">
+            <button type="button">Back Home</button>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <h2 style="margin:0;">My Lessons</h2>
+        <button id="refresh-lessons-btn" type="button">Refresh</button>
+      </div>
+      <div id="lessons-status" class="muted" style="margin-top:10px;">Loading lessons…</div>
+      <div id="lesson-list" class="lesson-list" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="current-lesson-title">Lesson Preview</h2>
+      <div id="lesson-preview-status" class="muted">Choose a lesson.</div>
+      <div id="items-grid" class="items-grid"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      bootAuth,
+      getSavedUser,
+      getLessons,
+      getImageUrl,
+      setSessionExpiredHandler
+    } from "./js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    let lessonsCache = [];
+    let currentLesson = null;
+
+    function setStatus(id, text, type = "muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function renderAuth(user = null){
+      if(user){
+        setStatus("auth-status", `Logged in as ${user.display_name || user.email}`, "success");
+      }else{
+        setStatus("auth-status", "Not logged in. Please login on the home page.", "error");
+      }
+    }
+
+    function normalizeItems(items){
+      return (items || []).map(item => ({
+        word: item.word || "",
+        image: item.image || null,
+        imageVersion: item.imageVersion || item.image_version || ""
+      }));
+    }
+
+    function renderLessons(){
+      const list = qs("lesson-list");
+      list.innerHTML = "";
+
+      if(!lessonsCache.length){
+        setStatus("lessons-status", "No lessons found.", "muted");
+        return;
+      }
+
+      setStatus("lessons-status", `${lessonsCache.length} lesson(s) found.`, "success");
+
+      lessonsCache.forEach((lesson) => {
+        const count = lesson?.data_json?.items?.length || 0;
+
+        const div = document.createElement("div");
+        div.className = "lesson-card";
+        div.innerHTML = `
+          <h3>${lesson.title}</h3>
+          <div class="muted" style="margin-bottom:12px;">
+            ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+          </div>
+          <button class="open-lesson-btn" data-id="${lesson.id}">
+            Open Lesson
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderLessonPreview(){
+      const grid = qs("items-grid");
+      grid.innerHTML = "";
+
+      if(!currentLesson){
+        qs("current-lesson-title").textContent = "Lesson Preview";
+        setStatus("lesson-preview-status", "Choose a lesson.", "muted");
+        return;
+      }
+
+      qs("current-lesson-title").textContent = currentLesson.title || "Lesson";
+      setStatus("lesson-preview-status", "Lesson loaded.", "success");
+
+      const items = normalizeItems(currentLesson?.data_json?.items || []);
+
+      if(!items.length){
+        setStatus("lesson-preview-status", "This lesson has no items yet.", "muted");
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "item-card";
+
+        card.innerHTML = `
+          ${
+            item.image?.thumb
+              ? `<img src="${getImageUrl(item.image.thumb, item.imageVersion)}" alt="${item.word || ""}" />`
+              : `<div style="width:120px;height:120px;margin:0 auto 10px;background:#f4f4f4;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#888;">No image</div>`
+          }
+          <div><strong>${item.word || "(empty)"}</strong></div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    async function loadLessons(){
+      try{
+        const res = await getLessons();
+        lessonsCache = Array.isArray(res.lessons) ? res.lessons : [];
+        renderLessons();
+      }catch(err){
+        setStatus("lessons-status", err.message || "Could not load lessons.", "error");
+      }
+    }
+
+    function openLesson(lessonId){
+      currentLesson = lessonsCache.find(l => l.id === lessonId) || null;
+      renderLessonPreview();
+    }
+
+    async function initPage(){
+      const savedUser = getSavedUser();
+      renderAuth(savedUser || null);
+
+      const auth = await bootAuth();
+      renderAuth(auth.user || null);
+
+      if(auth.ok){
+        await loadLessons();
+      }else{
+        setStatus("lessons-status", "Please login first on the home page.", "error");
+      }
+    }
+
+    function handleSessionExpired(){
+      renderAuth(null);
+      setStatus("lessons-status", "Session expired. Please login again.", "error");
+      setStatus("lesson-preview-status", "Session expired.", "error");
+    }
+
+    setSessionExpiredHandler(handleSessionExpired);
+
+    qs("refresh-lessons-btn").addEventListener("click", loadLessons);
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".open-lesson-btn");
+      if(btn){
+        openLesson(btn.dataset.id);
+      }
+    });
+
+    initPage();
+  </script>
+</body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Words Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f8ff; color: #1b2440; }
+    header { padding: 20px; background: #4a7dff; color: white; }
+    main { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .card { background: white; border-radius: 18px; padding: 20px; box-shadow: 0 10px 26px rgba(0,0,0,0.08); }
+    button { padding: 10px 16px; border: 0; border-radius: 12px; background: #4a7dff; color: white; cursor: pointer; }
+    pre { background: #eff4ff; border-radius: 14px; padding: 16px; overflow: auto; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Words Game</h1>
+  </header>
+  <button onclick="go('./creator.html')">
+  Parent Lesson Creator
+</button>
+  <main>
+    <div class="card">
+      <p>This is a starter Words page. Replace this with your current game UI.</p>
+      <div class="row">
+        <button id="btn-health">Check API</button>
+        <button id="btn-ws">Test WebSocket</button>
+      </div>
+      <pre id="output">Ready.</pre>
+    </div>
+  </main>
+  <div style="max-width:1100px; margin:0 auto; padding:20px;">
+  <h1>Words Game</h1>
+  <div id="lesson-list"></div>
+  <div id="lesson-viewer" style="display:none;"></div>
+</div>
+  <script type="module" src="./js/main.js"></script>
+  <script type="module">
+import { getLessons, getImageUrl, getToken } from "./js/api.js";
+
+let lessonMap = new Map();
+let currentLesson = null;
+
+const lessonListEl = document.getElementById("lesson-list");
+const lessonViewerEl = document.getElementById("lesson-viewer");
+
+function speakWord(word){
+  if(!word || !("speechSynthesis" in window)) return;
+
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.lang = "en-US";
+  utter.rate = 0.9;
+  window.speechSynthesis.speak(utter);
+}
+
+function showLessonList(){
+  lessonListEl.style.display = "";
+  lessonViewerEl.style.display = "none";
+}
+
+function showLessonViewer(){
+  lessonListEl.style.display = "none";
+  lessonViewerEl.style.display = "";
+}
+
+async function loadLessons(){
+  if(!lessonListEl) return;
+
+  if(!getToken()){
+    lessonListEl.innerHTML = `
+//       <div style="padding:16px; background:#fff3cd; border:1px solid #ffe69c; border-radius:12px;">
+//         Please login first from <a href="../index.html">index.html</a>.
+//       </div>
+//     `;
+//     return;
+//   }
+
+//   let res;
+//   try{
+//     res = await getLessons();
+//   }catch(err){
+//     console.error("lesson fetch failed", err);
+//     lessonListEl.innerHTML = `
+//       <div style="padding:16px; background:#f8d7da; border:1px solid #f1aeb5; border-radius:12px;">
+//         Could not reach backend.
+//       </div>
+//     `;
+//     return;
+//   }
+
+//   if(!res.ok || !Array.isArray(res.lessons)){
+//     console.log("lesson load failed", res);
+//     lessonListEl.innerHTML = `
+//       <div style="padding:16px; background:#f8d7da; border:1px solid #f1aeb5; border-radius:12px;">
+//         Could not load lessons.
+//       </div>
+//     `;
+//     return;
+//   }
+
+//   lessonMap = new Map();
+//   lessonListEl.innerHTML = `
+//     <div style="margin-bottom:16px;">
+//       <h2 style="margin:0 0 6px 0;">Words Lessons</h2>
+//       <div style="color:#666;">Choose a lesson to begin.</div>
+//     </div>
+//   `;
+
+//   if(res.lessons.length === 0){
+//     lessonListEl.innerHTML += `
+//       <div style="padding:16px; background:#eef3ff; border:1px solid #cfdcff; border-radius:12px;">
+//         No lessons yet. Create one in <a href="./creator.html">Parent Lesson Creator</a>.
+//       </div>
+//     `;
+//     return;
+//   }
+
+//   const grid = document.createElement("div");
+//   grid.style.display = "grid";
+//   grid.style.gridTemplateColumns = "repeat(auto-fill,minmax(240px,1fr))";
+//   grid.style.gap = "16px";
+
+//   res.lessons.forEach((lesson) => {
+//     lessonMap.set(lesson.id, lesson);
+
+//     const items = lesson?.data_json?.items || [];
+//     const firstImage =
+//       items.find(i => i?.image?.thumb)?.image?.thumb ||
+//       items.find(i => i?.image?.medium)?.image?.medium ||
+//       null;
+
+//     const card = document.createElement("div");
+//     card.style.background = "#fff";
+//     card.style.border = "1px solid #ddd";
+//     card.style.borderRadius = "16px";
+//     card.style.padding = "14px";
+//     card.style.boxShadow = "0 8px 20px rgba(0,0,0,.06)";
+
+//     card.innerHTML = `
+//       <div style="
+//         height:140px;
+//         border-radius:12px;
+//         background:#f6f6f6;
+//         display:grid;
+//         place-items:center;
+//         overflow:hidden;
+//         margin-bottom:12px;
+//       ">
+//         ${
+//           firstImage
+//             ? `<img src="${getImageUrl(firstImage)}" alt="${lesson.title}" style="width:100%;height:100%;object-fit:contain;">`
+//             : `<div style="color:#777;">No image</div>`
+//         }
+//       </div>
+
+//       <h3 style="margin:0 0 6px 0;">${lesson.title}</h3>
+//       <div style="color:#666; font-size:14px; margin-bottom:12px;">
+//         ${items.length} word(s) • ${lesson.visibility}
+//       </div>
+
+//       <button class="open-lesson-btn" data-id="${lesson.id}" style="
+//         width:100%;
+//         padding:12px;
+//         border:none;
+//         border-radius:12px;
+//         background:#4a7dff;
+//         color:#fff;
+//         font-weight:700;
+//         cursor:pointer;
+//       ">
+//         Open Lesson
+//       </button>
+//     `;
+
+//     grid.appendChild(card);
+//   });
+
+//   lessonListEl.appendChild(grid);
+// }
+
+// function renderLesson(lesson){
+//   currentLesson = lesson;
+//   const items = lesson?.data_json?.items || [];
+
+//   lessonViewerEl.innerHTML = `
+//     <div style="margin:8px 0 20px 0;">
+//       <button id="back-to-lessons-btn" style="
+//         padding:10px 14px;
+//         border:none;
+//         border-radius:10px;
+//         background:#666;
+//         color:#fff;
+//         cursor:pointer;
+//         margin-bottom:14px;
+//       ">
+//         ← Back to Lessons
+//       </button>
+
+//       <h2 style="margin:0 0 6px 0;">${lesson.title}</h2>
+//       <div style="color:#666; margin-bottom:18px;">
+//         ${items.length} item(s)
+//       </div>
+
+//       <div id="lesson-items" style="
+//         display:grid;
+//         grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+//         gap:16px;
+//       "></div>
+//     </div>
+//   `;
+
+//   const itemsWrap = document.getElementById("lesson-items");
+
+//   items.forEach((item, index) => {
+//     const card = document.createElement("div");
+//     card.style.background = "#fff";
+//     card.style.border = "1px solid #ddd";
+//     card.style.borderRadius = "16px";
+//     card.style.padding = "14px";
+//     card.style.boxShadow = "0 8px 20px rgba(0,0,0,.05)";
+
+//     const imageUrl = item?.image?.medium || item?.image?.thumb || null;
+
+//     card.innerHTML = `
+//       <div style="
+//         height:170px;
+//         border-radius:12px;
+//         background:#f6f6f6;
+//         display:grid;
+//         place-items:center;
+//         overflow:hidden;
+//         margin-bottom:12px;
+//       ">
+//         ${
+//           imageUrl
+//             ? `<img src="${getImageUrl(imageUrl)}" alt="${item.word || ""}" style="width:100%;height:100%;object-fit:contain;">`
+//             : `<div style="color:#777;">No image</div>`
+//         }
+//       </div>
+
+//       <div style="
+//         font-size:22px;
+//         font-weight:700;
+//         text-align:center;
+//         margin-bottom:12px;
+//       ">
+//         ${item.word || `Item ${index + 1}`}
+//       </div>
+
+//       <button class="speak-word-btn" data-word="${item.word || ""}" style="
+//         width:100%;
+//         padding:12px;
+//         border:none;
+//         border-radius:12px;
+//         background:#20a35b;
+//         color:#fff;
+//         font-weight:700;
+//         cursor:pointer;
+//       ">
+//         🔊 Speak
+//       </button>
+//     `;
+
+//     itemsWrap.appendChild(card);
+//   });
+
+//   showLessonViewer();
+// }
+
+// document.addEventListener("click", (e) => {
+//   const openBtn = e.target.closest(".open-lesson-btn");
+//   if(openBtn){
+//     const lessonId = openBtn.dataset.id;
+//     const lesson = lessonMap.get(lessonId);
+//     if(lesson) renderLesson(lesson);
+//     return;
+//   }
+
+//   const backBtn = e.target.closest("#back-to-lessons-btn");
+//   if(backBtn){
+//     showLessonList();
+//     return;
+//   }
+
+//   const speakBtn = e.target.closest(".speak-word-btn");
+//   if(speakBtn){
+//     speakWord(speakBtn.dataset.word || "");
+//   }
+// });
+
+// showLessonList();
+// loadLessons();
+// </script> -->
+  <!-- <script type="module">
+import { getLessons, getImageUrl, getToken } from "./js/api.js";
+
+let lessonMap = new Map();
+let currentLesson = null;
+
+function ensureViewer(){
+  let viewer = document.getElementById("lesson-viewer");
+  if(!viewer){
+    viewer = document.createElement("div");
+    viewer.id = "lesson-viewer";
+    viewer.style.marginTop = "24px";
+    document.body.appendChild(viewer);
+  }
+  return viewer;
+}
+
+async function loadLessons(){
+  const list = document.getElementById("lesson-list");
+  if(!list) return;
+
+  if(!getToken()){
+    list.innerHTML = `<p>Please login first in creator.html or set a token.</p>`;
+    return;
+  }
+
+  let res;
+  try{
+    res = await getLessons();
+  }catch(err){
+    console.error("lesson fetch failed", err);
+    list.innerHTML = `<p>Could not reach backend.</p>`;
+    return;
+  }
+
+  if(!res.ok || !Array.isArray(res.lessons)){
+    console.log("lesson load failed", res);
+    list.innerHTML = `<p>Could not load lessons.</p>`;
+    return;
+  }
+
+  lessonMap = new Map();
+  list.innerHTML = "";
+
+  if(res.lessons.length === 0){
+    list.innerHTML = `<p>No lessons yet.</p>`;
+    return;
+  }
+
+  res.lessons.forEach((lesson) => {
+    lessonMap.set(lesson.id, lesson);
+
+    const div = document.createElement("div");
+    div.className = "lesson-card";
+    div.style.border = "1px solid #ddd";
+    div.style.borderRadius = "12px";
+    div.style.padding = "12px";
+    div.style.marginBottom = "12px";
+    div.innerHTML = `
+      <h3>${lesson.title}</h3>
+      <div style="margin-bottom:8px; color:#666;">
+        Type: ${lesson.type} • ${lesson.visibility}
+      </div>
+      <button class="open-lesson-btn" data-id="${lesson.id}">
+        Open Lesson
+      </button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function renderLesson(lesson){
+  currentLesson = lesson;
+  const viewer = ensureViewer();
+  const items = lesson?.data_json?.items || [];
+
+  viewer.innerHTML = `
+    <div style="margin:18px 0;">
+      <h2 style="margin-bottom:6px;">${lesson.title}</h2>
+      <div style="color:#666; margin-bottom:16px;">
+        ${items.length} item(s)
+      </div>
+      <div id="lesson-items" style="
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+        gap:14px;
+      "></div>
+    </div>
+  `;
+
+  const itemsWrap = document.getElementById("lesson-items");
+
+  items.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.style.border = "1px solid #ddd";
+    card.style.borderRadius = "12px";
+    card.style.padding = "12px";
+    card.style.background = "#fff";
+
+    const title = document.createElement("div");
+    title.style.fontWeight = "700";
+    title.style.marginBottom = "10px";
+    title.textContent = item.word || `Item ${index + 1}`;
+    card.appendChild(title);
+
+    if(item?.image?.medium){
+      const img = document.createElement("img");
+      img.src = getImageUrl(item.image.medium);
+      img.alt = item.word || "";
+      img.style.width = "100%";
+      img.style.height = "160px";
+      img.style.objectFit = "contain";
+      img.style.background = "#f6f6f6";
+      img.style.borderRadius = "8px";
+      img.style.display = "block";
+      img.style.marginBottom = "10px";
+      card.appendChild(img);
+    } else if(item?.image?.thumb){
+      const img = document.createElement("img");
+      img.src = getImageUrl(item.image.thumb);
+      img.alt = item.word || "";
+      img.style.width = "100%";
+      img.style.height = "160px";
+      img.style.objectFit = "contain";
+      img.style.background = "#f6f6f6";
+      img.style.borderRadius = "8px";
+      img.style.display = "block";
+      img.style.marginBottom = "10px";
+      card.appendChild(img);
+    } else {
+      const empty = document.createElement("div");
+      empty.textContent = "No image";
+      empty.style.height = "160px";
+      empty.style.display = "grid";
+      empty.style.placeItems = "center";
+      empty.style.background = "#f6f6f6";
+      empty.style.borderRadius = "8px";
+      empty.style.marginBottom = "10px";
+      empty.style.color = "#777";
+      card.appendChild(empty);
+    }
+
+    itemsWrap.appendChild(card);
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".open-lesson-btn");
+  if(!btn) return;
+
+  const lessonId = btn.dataset.id;
+  const lesson = lessonMap.get(lessonId);
+  if(!lesson) return;
+
+  renderLesson(lesson);
+});
+
+loadLessons();
+</script> -->
+  <!-- <script type="module">
+import { getLessons, getImageUrl } from "./js/api.js";
+
+let lessonMap = new Map();
+
+async function loadLessons() {
+  const res = await getLessons();
+  const list = document.getElementById("lesson-list");
+
+  if (!list) return;
+
+  if (!res.ok || !Array.isArray(res.lessons)) {
+    console.log("lesson load failed", res);
+    list.innerHTML = `<p>Could not load lessons.</p>`;
+    return;
+  }
+
+  lessonMap = new Map();
+  list.innerHTML = "";
+
+  res.lessons.forEach((lesson) => {
+    lessonMap.set(lesson.id, lesson);
+
+    const div = document.createElement("div");
+    div.className = "lesson-card";
+    div.innerHTML = `
+      <h3>${lesson.title}</h3>
+      <button class="open-lesson-btn" data-id="${lesson.id}">
+        Open Lesson
+      </button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function renderLesson(lesson) {
+  let viewer = document.getElementById("lesson-viewer");
+  if (!viewer) {
+    viewer = document.createElement("div");
+    viewer.id = "lesson-viewer";
+    document.body.appendChild(viewer);
+  }
+
+  const items = lesson?.data_json?.items || [];
+
+  viewer.innerHTML = `
+    <h2>${lesson.title}</h2>
+    <div id="lesson-items"></div>
+  `;
+
+  const itemsWrap = document.getElementById("lesson-items");
+
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.style.margin = "12px 0";
+
+    row.innerHTML = `<strong>${item.word || ""}</strong>`;
+
+    // If your lesson item later contains image URLs like mediumUrl/thumbUrl,
+    // this is where the image gets rendered.
+    if (item.mediumUrl) {
+      const img = document.createElement("img");
+      img.src = getImageUrl(item.mediumUrl);
+      img.alt = item.word || "";
+      img.style.maxWidth = "180px";
+      img.style.display = "block";
+      img.style.marginTop = "8px";
+      row.appendChild(img);
+    }
+
+    itemsWrap.appendChild(row);
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".open-lesson-btn");
+  if (!btn) return;
+
+  const lessonId = btn.dataset.id;
+  const lesson = lessonMap.get(lessonId);
+
+  if (!lesson) {
+    console.log("lesson not found", lessonId);
+    return;
+  }
+
+  renderLesson(lesson);
+});
+
+loadLessons();
+</script> -->
+// <script>
+//   function go(page){
+//     window.location.href = page;
+//   }
+// </script>
+  <!-- <script type="module">
+
+import {getLessons,getImageUrl} from "./js/api.js";
+
+
+async function loadLessons(){
+
+  const res = await getLessons();
+
+  if(!res.ok){
+    console.log("no lessons yet");
+    return;
+  }
+
+  const list = document.getElementById("lesson-list");
+
+  list.innerHTML = "";
+
+  res.lessons.forEach(lesson=>{
+
+    const div = document.createElement("div");
+    div.className="lesson-card";
+
+    div.innerHTML = `
+      <h3>${lesson.title}</h3>
+      <button data-id="${lesson.id}">
+        Open Lesson
+      </button>
+    `;
+
+    list.appendChild(div);
+  });
+
+}
+
+loadLessons();
+
+</script> -->
+// </body>
+// </html>

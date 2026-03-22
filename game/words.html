@@ -1,0 +1,2985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Words Game</title>
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#f6f8ff;
+      color:#222;
+    }
+
+    .wrap{
+      max-width:1180px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:18px;
+      padding:20px;
+      margin-bottom:18px;
+      box-shadow:0 8px 22px rgba(0,0,0,0.08);
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .space{
+      justify-content:space-between;
+    }
+
+    .lesson-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:14px;
+      margin-top:14px;
+    }
+
+    .lesson-card{
+      background:#eef3ff;
+      border-radius:14px;
+      padding:16px;
+    }
+
+    .lesson-card h3{
+      margin:0 0 8px 0;
+    }
+
+    .play-area{
+      display:grid;
+      grid-template-columns:1fr 330px;
+      gap:18px;
+    }
+
+    .viewer{
+      background:#f8faff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:18px;
+      min-height:560px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      text-align:center;
+    }
+
+    .viewer img{
+      width:min(100%, 380px);
+      height:260px;
+      object-fit:contain;
+      background:#f0f0f0;
+      border-radius:16px;
+      margin-bottom:18px;
+    }
+
+    .word-big{
+      font-size:2rem;
+      font-weight:900;
+      margin:10px 0 6px;
+    }
+
+    .hint{
+      color:#666;
+      font-size:1rem;
+      margin-bottom:14px;
+      min-height:22px;
+    }
+
+    .side-panel{
+      background:#fbfcff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:16px;
+    }
+
+    .stat{
+      background:#eef3ff;
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:10px;
+      font-weight:700;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .mode-toggle{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+      justify-content:center;
+    }
+
+    .choice-grid{
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(140px, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+
+    .choice-btn{
+      width:100%;
+      min-height:58px;
+      font-size:1rem;
+    }
+
+    .mode-panel{
+      width:100%;
+      margin-top:8px;
+    }
+
+    .spelling-box,
+    .scramble-box{
+      width:100%;
+      max-width:520px;
+      margin:0 auto;
+    }
+
+    .spelling-input{
+      width:100%;
+      box-sizing:border-box;
+      padding:14px;
+      border:1px solid #cfd8ea;
+      border-radius:12px;
+      font-size:1.1rem;
+      margin-bottom:10px;
+      text-align:center;
+    }
+
+    .scramble-answer{
+      min-height:52px;
+      border:2px dashed #cfd8ea;
+      border-radius:12px;
+      padding:10px;
+      margin-bottom:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      flex-wrap:wrap;
+      background:#fff;
+      font-weight:900;
+      font-size:1.2rem;
+    }
+
+    .letter-bank{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:center;
+    }
+
+    .letter-btn{
+      min-width:46px;
+      min-height:46px;
+      padding:0 10px;
+      font-size:1.1rem;
+    }
+
+    button{
+      padding:12px 14px;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      background:#3f6df6;
+      color:#fff;
+    }
+
+    button.secondary{
+      background:#6c757d;
+    }
+
+    button.success{
+      background:#0a8a35;
+    }
+
+    button.warning{
+      background:#f39c12;
+    }
+
+    button.danger{
+      background:#d33;
+    }
+
+    button.correct{
+      background:#0a8a35;
+    }
+
+    button.wrong{
+      background:#d33;
+    }
+
+    .muted{ color:#666; }
+    .success-text{ color:#0a8a35; font-weight:700; }
+    .error{ color:#c62828; font-weight:700; }
+
+    .hidden{
+      display:none !important;
+    }
+
+    @media (max-width: 860px){
+      .play-area{
+        grid-template-columns:1fr;
+      }
+
+      .choice-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row space">
+        <div>
+          <h1 style="margin:0 0 8px 0;">Words Game</h1>
+          <div id="auth-status" class="muted">Checking login…</div>
+        </div>
+        <div class="row">
+          <a href="../index.html"><button type="button" class="secondary">Back Home</button></a>
+          <a href="../creator.html"><button type="button" class="warning">Lesson Creator</button></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 style="margin:0;">My Lessons</h2>
+        <button id="refresh-lessons-btn" type="button">Refresh</button>
+      </div>
+      <div id="lessons-status" class="muted" style="margin-top:10px;">Loading lessons…</div>
+      <div id="lesson-list" class="lesson-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 id="current-lesson-title" style="margin:0;">Play Area</h2>
+        <div id="game-status" class="muted">Choose a lesson to start.</div>
+      </div>
+
+      <div class="play-area" style="margin-top:16px;">
+        <div class="viewer">
+          <div class="mode-toggle">
+            <button id="mode-flashcard-btn" type="button">Flashcard</button>
+            <button id="mode-choice-btn" type="button" class="secondary">Choice</button>
+            <button id="mode-listen-btn" type="button" class="secondary">Listen</button>
+            <button id="mode-spelling-btn" type="button" class="secondary">Spelling</button>
+            <button id="mode-scramble-btn" type="button" class="secondary">Scramble</button>
+          </div>
+
+          <img id="word-image" alt="Lesson image" class="hidden" />
+          <div id="word-image-placeholder" class="muted">No image yet</div>
+
+          <div id="word-display" class="word-big">—</div>
+          <div id="word-hint" class="hint">Pick a lesson to begin.</div>
+
+          <div id="choice-area" class="choice-grid hidden"></div>
+
+          <div id="spelling-area" class="mode-panel hidden">
+            <div class="spelling-box">
+              <input id="spelling-input" class="spelling-input" type="text" placeholder="Type the word..." autocomplete="off" />
+              <div class="row" style="justify-content:center;">
+                <button id="check-spelling-btn" type="button" class="success">Check</button>
+                <button id="clear-spelling-btn" type="button" class="secondary">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="scramble-area" class="mode-panel hidden">
+            <div class="scramble-box">
+              <div id="scramble-answer" class="scramble-answer"></div>
+              <div id="letter-bank" class="letter-bank"></div>
+              <div class="row" style="justify-content:center; margin-top:12px;">
+                <button id="check-scramble-btn" type="button" class="success">Check</button>
+                <button id="clear-scramble-btn" type="button" class="secondary">Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-panel">
+          <div class="stat">Lesson: <span id="stat-lesson">—</span></div>
+          <div class="stat">Card: <span id="stat-index">0 / 0</span></div>
+          <div class="stat">Stars: <span id="stat-stars">0</span></div>
+          <div class="stat">Score: <span id="stat-score">0</span></div>
+          <div class="stat">Correct: <span id="stat-correct">0</span></div>
+          <div class="stat">Wrong: <span id="stat-wrong">0</span></div>
+
+          <div class="controls">
+            <button id="prev-btn" type="button" class="secondary">⬅ Prev</button>
+            <button id="next-btn" type="button">Next ➡</button>
+            <button id="reveal-btn" type="button" class="warning">👀 Reveal</button>
+            <button id="hide-btn" type="button" class="secondary">🙈 Hide</button>
+            <button id="speak-btn" type="button" class="success">🔊 Speak</button>
+            <button id="random-btn" type="button">🎲 Random</button>
+            <button id="star-btn" type="button" class="success">⭐ Star</button>
+            <button id="shuffle-btn" type="button" class="danger">🔀 Shuffle</button>
+            <button id="reset-score-btn" type="button" class="secondary">Reset Score</button>
+            <button id="replay-audio-btn" type="button" class="success">🎧 Replay</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="muted" style="margin-bottom:6px;">Word List</div>
+            <div id="mini-list" class="muted" style="line-height:1.7;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      bootAuth,
+      getSavedUser,
+      getLessons,
+      getImageUrl,
+      setSessionExpiredHandler
+    } from "./js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    let lessonsCache = [];
+    let currentLesson = null;
+    let currentItems = [];
+    let currentIndex = 0;
+    let revealWord = false;
+    let sessionStars = 0;
+    let score = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let gameMode = "flashcard";
+    let choiceOptions = [];
+    let answeredCurrent = false;
+    let autoSpeakTimer = null;
+    let scrambleLetters = [];
+    let scramblePicked = [];
+
+    function setStatus(id, text, type = "muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function renderAuth(user = null){
+      if(user){
+        setStatus("auth-status", `Logged in as ${user.display_name || user.email}`, "success-text");
+      }else{
+        setStatus("auth-status", "Not logged in. Please login on the home page.", "error");
+      }
+    }
+
+    function normalizeItems(items){
+      return (items || []).map(item => ({
+        word: item.word || "",
+        image: item.image || null,
+        imageVersion: item.imageVersion || item.image_version || ""
+      })).filter(item => item.word);
+    }
+
+    function shuffleArray(arr){
+      const copy = [...arr];
+      for(let i = copy.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function uniqueWords(items){
+      return [...new Set(items.map(item => item.word).filter(Boolean))];
+    }
+
+    function normalizeWord(text){
+      return String(text || "").trim().toLowerCase();
+    }
+
+    function buildChoices(){
+      if(!currentItems.length) return [];
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+      const pool = uniqueWords(currentItems).filter(w => w !== currentWord);
+      const shuffledPool = shuffleArray(pool);
+      const wrongChoices = shuffledPool.slice(0, 3);
+      return shuffleArray([currentWord, ...wrongChoices]);
+    }
+
+    function stopAutoSpeak(){
+      if(autoSpeakTimer){
+        clearTimeout(autoSpeakTimer);
+        autoSpeakTimer = null;
+      }
+    }
+
+    function renderLessons(){
+      const list = qs("lesson-list");
+      list.innerHTML = "";
+
+      if(!lessonsCache.length){
+        setStatus("lessons-status", "No lessons found.", "muted");
+        return;
+      }
+
+      setStatus("lessons-status", `${lessonsCache.length} lesson(s) found.`, "success-text");
+
+      lessonsCache.forEach((lesson) => {
+        const count = lesson?.data_json?.items?.length || 0;
+
+        const div = document.createElement("div");
+        div.className = "lesson-card";
+        div.innerHTML = `
+          <h3>${lesson.title}</h3>
+          <div class="muted" style="margin-bottom:12px;">
+            ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+          </div>
+          <button class="open-lesson-btn" data-id="${lesson.id}">
+            Open Lesson
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderMiniList(){
+      const el = qs("mini-list");
+
+      if(!currentItems.length){
+        el.textContent = "No items loaded.";
+        return;
+      }
+
+      el.innerHTML = currentItems
+        .map((item, index) => {
+          const active = index === currentIndex ? "style='font-weight:900;color:#1d3f9e;'" : "";
+          return `<div ${active}>${index + 1}. ${item.word || "(empty)"}</div>`;
+        })
+        .join("");
+    }
+
+    function renderStats(){
+      qs("stat-lesson").textContent = currentLesson?.title || "—";
+      qs("stat-index").textContent = currentItems.length ? `${currentIndex + 1} / ${currentItems.length}` : "0 / 0";
+      qs("stat-stars").textContent = String(sessionStars);
+      qs("stat-score").textContent = String(score);
+      qs("stat-correct").textContent = String(correctCount);
+      qs("stat-wrong").textContent = String(wrongCount);
+    }
+
+    function hideAllModeAreas(){
+      qs("choice-area").classList.add("hidden");
+      qs("spelling-area").classList.add("hidden");
+      qs("scramble-area").classList.add("hidden");
+    }
+
+    function renderChoices(){
+      const choiceArea = qs("choice-area");
+      choiceArea.innerHTML = "";
+
+      if((gameMode !== "choice" && gameMode !== "listen") || !currentItems.length){
+        choiceArea.classList.add("hidden");
+        return;
+      }
+
+      choiceArea.classList.remove("hidden");
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+
+      choiceOptions.forEach(option => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+        btn.textContent = option;
+        btn.dataset.word = option;
+
+        if(answeredCurrent){
+          if(option === currentWord){
+            btn.classList.add("correct");
+          }
+        }
+
+        btn.addEventListener("click", () => chooseAnswer(option));
+        choiceArea.appendChild(btn);
+      });
+    }
+
+    function renderScramble(){
+      const answerEl = qs("scramble-answer");
+      const bankEl = qs("letter-bank");
+      answerEl.innerHTML = "";
+      bankEl.innerHTML = "";
+
+      if(gameMode !== "scramble" || !currentItems.length){
+        qs("scramble-area").classList.add("hidden");
+        return;
+      }
+
+      qs("scramble-area").classList.remove("hidden");
+
+      scramblePicked.forEach((letter, index) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "letter-btn secondary";
+        chip.textContent = letter;
+        chip.addEventListener("click", () => {
+          scramblePicked.splice(index, 1);
+          renderScramble();
+        });
+        answerEl.appendChild(chip);
+      });
+
+      scrambleLetters.forEach((letterObj, index) => {
+        if(letterObj.used) return;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "letter-btn";
+        btn.textContent = letterObj.letter;
+        btn.addEventListener("click", () => {
+          scrambleLetters[index].used = true;
+          scramblePicked.push(letterObj.letter);
+          renderScramble();
+        });
+        bankEl.appendChild(btn);
+      });
+
+      if(!scramblePicked.length){
+        answerEl.textContent = "Build the word here";
+      }
+    }
+
+    function prepareScramble(){
+      const word = currentItems[currentIndex]?.word || "";
+      scramblePicked = [];
+      scrambleLetters = shuffleArray(word.split("")).map(letter => ({
+        letter,
+        used: false
+      }));
+    }
+
+    function renderCard(){
+      const img = qs("word-image");
+      const placeholder = qs("word-image-placeholder");
+      const wordDisplay = qs("word-display");
+      const hint = qs("word-hint");
+
+      renderStats();
+      hideAllModeAreas();
+
+      if(!currentLesson || !currentItems.length){
+        qs("current-lesson-title").textContent = "Play Area";
+        wordDisplay.textContent = "—";
+        hint.textContent = "Choose a lesson to begin.";
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image yet";
+        renderMiniList();
+        return;
+      }
+
+      const item = currentItems[currentIndex];
+      qs("current-lesson-title").textContent = currentLesson.title || "Lesson";
+
+      if(item?.image?.medium){
+        img.src = getImageUrl(item.image.medium, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else if(item?.image?.thumb){
+        img.src = getImageUrl(item.image.thumb, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else{
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image";
+      }
+
+      if(gameMode === "flashcard"){
+        wordDisplay.textContent = revealWord ? (item.word || "(empty)") : "•••••";
+        hint.textContent = revealWord
+          ? "Word revealed."
+          : "Try to guess the word, then reveal or speak it.";
+      } else if(gameMode === "choice"){
+        wordDisplay.textContent = "What word matches this picture?";
+        hint.textContent = answeredCurrent
+          ? "Choose Next for the next card."
+          : "Tap the correct answer below.";
+      } else if(gameMode === "listen"){
+        wordDisplay.textContent = "Listen carefully 👂";
+        hint.textContent = answeredCurrent
+          ? "Choose Next for the next card."
+          : "Tap Replay or listen automatically, then choose the word you heard.";
+      } else if(gameMode === "spelling"){
+        wordDisplay.textContent = "Spell the word";
+        hint.textContent = answeredCurrent
+          ? "Nice! Move to the next card."
+          : "Type the word that matches the picture.";
+        qs("spelling-area").classList.remove("hidden");
+      } else if(gameMode === "scramble"){
+        wordDisplay.textContent = "Unscramble the word";
+        hint.textContent = answeredCurrent
+          ? "Nice! Move to the next card."
+          : "Tap letters in the right order.";
+        qs("scramble-area").classList.remove("hidden");
+      }
+
+      renderChoices();
+      renderScramble();
+      renderMiniList();
+    }
+
+    function startChoiceRound(){
+      answeredCurrent = false;
+      revealWord = false;
+      choiceOptions = buildChoices();
+      renderCard();
+    }
+
+    function startListenRound(){
+      answeredCurrent = false;
+      revealWord = false;
+      choiceOptions = buildChoices();
+      renderCard();
+      stopAutoSpeak();
+      autoSpeakTimer = setTimeout(() => {
+        speakCurrent();
+      }, 300);
+    }
+
+    function startSpellingRound(){
+      answeredCurrent = false;
+      revealWord = false;
+      qs("spelling-input").value = "";
+      renderCard();
+      qs("spelling-input").focus();
+    }
+
+    function startScrambleRound(){
+      answeredCurrent = false;
+      revealWord = false;
+      prepareScramble();
+      renderCard();
+    }
+
+    function openLesson(lessonId){
+      currentLesson = lessonsCache.find(l => l.id === lessonId) || null;
+      currentItems = normalizeItems(currentLesson?.data_json?.items || []);
+      currentIndex = 0;
+      revealWord = false;
+      sessionStars = 0;
+      score = 0;
+      correctCount = 0;
+      wrongCount = 0;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      prepareScramble();
+
+      if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "spelling"){
+        startSpellingRound();
+      } else if(gameMode === "scramble"){
+        startScrambleRound();
+      } else {
+        renderCard();
+      }
+
+      setStatus("game-status", "Lesson loaded.", "success-text");
+    }
+
+    function nextCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex + 1) % currentItems.length;
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "spelling"){
+        startSpellingRound();
+      } else if(gameMode === "scramble"){
+        startScrambleRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function prevCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex - 1 + currentItems.length) % currentItems.length;
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "spelling"){
+        startSpellingRound();
+      } else if(gameMode === "scramble"){
+        startScrambleRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function randomCard(){
+      if(!currentItems.length) return;
+      currentIndex = Math.floor(Math.random() * currentItems.length);
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "spelling"){
+        startSpellingRound();
+      } else if(gameMode === "scramble"){
+        startScrambleRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function revealCurrent(){
+      if(!currentItems.length || gameMode !== "flashcard") return;
+      revealWord = true;
+      renderCard();
+    }
+
+    function hideCurrent(){
+      if(!currentItems.length || gameMode !== "flashcard") return;
+      revealWord = false;
+      renderCard();
+    }
+
+    function starCurrent(){
+      if(!currentItems.length) return;
+      sessionStars += 1;
+      setStatus("game-status", "Nice job! ⭐", "success-text");
+      renderCard();
+    }
+
+    function shuffleCurrentLesson(){
+      if(!currentItems.length) return;
+      currentItems = shuffleArray(currentItems);
+      currentIndex = 0;
+      revealWord = false;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      prepareScramble();
+      setStatus("game-status", "Lesson shuffled.", "success-text");
+
+      if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "spelling"){
+        startSpellingRound();
+      } else if(gameMode === "scramble"){
+        startScrambleRound();
+      } else {
+        renderCard();
+      }
+    }
+
+    function resetScore(){
+      score = 0;
+      correctCount = 0;
+      wrongCount = 0;
+      sessionStars = 0;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      prepareScramble();
+      setStatus("game-status", "Score reset.", "success-text");
+
+      if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "spelling"){
+        startSpellingRound();
+      } else if(gameMode === "scramble"){
+        startScrambleRound();
+      } else {
+        renderCard();
+      }
+    }
+
+    function speakCurrent(){
+      if(!currentItems.length) return;
+      const text = currentItems[currentIndex]?.word || "";
+      if(!text) return;
+
+      try{
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.9;
+        utter.pitch = 1;
+        window.speechSynthesis.speak(utter);
+      }catch(err){
+        setStatus("game-status", "Speech failed on this device/browser.", "error");
+      }
+    }
+
+    function reward(points, message){
+      score += points;
+      correctCount += 1;
+      sessionStars += 1;
+      answeredCurrent = true;
+      setStatus("game-status", message, "success-text");
+      renderCard();
+    }
+
+    function punish(message){
+      wrongCount += 1;
+      answeredCurrent = true;
+      setStatus("game-status", message, "error");
+      renderCard();
+    }
+
+    function chooseAnswer(selectedWord){
+      if((gameMode !== "choice" && gameMode !== "listen") || !currentItems.length || answeredCurrent) return;
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+
+      if(selectedWord === currentWord){
+        reward(gameMode === "listen" ? 15 : 10, `Correct! "${currentWord}" ⭐`);
+      } else {
+        punish(`Oops! Correct answer: "${currentWord}"`);
+      }
+
+      const buttons = [...document.querySelectorAll(".choice-btn")];
+      buttons.forEach(btn => {
+        const value = btn.dataset.word;
+        if(value === currentWord){
+          btn.classList.add("correct");
+        } else if(value === selectedWord && selectedWord !== currentWord){
+          btn.classList.add("wrong");
+        }
+      });
+    }
+
+    function checkSpelling(){
+      if(gameMode !== "spelling" || !currentItems.length || answeredCurrent) return;
+
+      const typed = normalizeWord(qs("spelling-input").value);
+      const actual = normalizeWord(currentItems[currentIndex]?.word);
+
+      if(!typed){
+        setStatus("game-status", "Type an answer first.", "error");
+        return;
+      }
+
+      if(typed === actual){
+        reward(20, `Correct spelling! "${currentItems[currentIndex].word}" ⭐`);
+      } else {
+        punish(`Not quite. Correct spelling: "${currentItems[currentIndex].word}"`);
+      }
+    }
+
+    function clearSpelling(){
+      qs("spelling-input").value = "";
+      answeredCurrent = false;
+      setStatus("game-status", "Spelling input cleared.", "muted");
+      renderCard();
+      qs("spelling-input").focus();
+    }
+
+    function checkScramble(){
+      if(gameMode !== "scramble" || !currentItems.length || answeredCurrent) return;
+
+      const built = normalizeWord(scramblePicked.join(""));
+      const actual = normalizeWord(currentItems[currentIndex]?.word);
+
+      if(!built){
+        setStatus("game-status", "Build the word first.", "error");
+        return;
+      }
+
+      if(built === actual){
+        reward(20, `Correct! You unscrambled "${currentItems[currentIndex].word}" ⭐`);
+      } else {
+        punish(`Nope. Correct word: "${currentItems[currentIndex].word}"`);
+      }
+    }
+
+    function clearScramble(){
+      prepareScramble();
+      answeredCurrent = false;
+      setStatus("game-status", "Scramble cleared.", "muted");
+      renderCard();
+    }
+
+    function setMode(mode){
+      gameMode =
+        mode === "choice" ? "choice" :
+        mode === "listen" ? "listen" :
+        mode === "spelling" ? "spelling" :
+        mode === "scramble" ? "scramble" :
+        "flashcard";
+
+      qs("mode-flashcard-btn").classList.toggle("secondary", gameMode !== "flashcard");
+      qs("mode-choice-btn").classList.toggle("secondary", gameMode !== "choice");
+      qs("mode-listen-btn").classList.toggle("secondary", gameMode !== "listen");
+      qs("mode-spelling-btn").classList.toggle("secondary", gameMode !== "spelling");
+      qs("mode-scramble-btn").classList.toggle("secondary", gameMode !== "scramble");
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "spelling"){
+        stopAutoSpeak();
+        startSpellingRound();
+      } else if(gameMode === "scramble"){
+        stopAutoSpeak();
+        startScrambleRound();
+      } else {
+        stopAutoSpeak();
+        answeredCurrent = false;
+        choiceOptions = [];
+        renderCard();
+      }
+    }
+
+    async function loadLessons(){
+      try{
+        const res = await getLessons();
+        lessonsCache = Array.isArray(res.lessons) ? res.lessons : [];
+        renderLessons();
+      }catch(err){
+        setStatus("lessons-status", err.message || "Could not load lessons.", "error");
+      }
+    }
+
+    async function initPage(){
+      const savedUser = getSavedUser();
+      renderAuth(savedUser || null);
+
+      const auth = await bootAuth();
+      renderAuth(auth.user || null);
+
+      if(auth.ok){
+        await loadLessons();
+      }else{
+        setStatus("lessons-status", "Please login first on the home page.", "error");
+      }
+
+      renderCard();
+    }
+
+    function handleSessionExpired(){
+      renderAuth(null);
+      setStatus("lessons-status", "Session expired. Please login again.", "error");
+      setStatus("game-status", "Session expired.", "error");
+    }
+
+    setSessionExpiredHandler(handleSessionExpired);
+
+    qs("refresh-lessons-btn").addEventListener("click", loadLessons);
+    qs("prev-btn").addEventListener("click", prevCard);
+    qs("next-btn").addEventListener("click", nextCard);
+    qs("random-btn").addEventListener("click", randomCard);
+    qs("reveal-btn").addEventListener("click", revealCurrent);
+    qs("hide-btn").addEventListener("click", hideCurrent);
+    qs("speak-btn").addEventListener("click", speakCurrent);
+    qs("replay-audio-btn").addEventListener("click", speakCurrent);
+    qs("star-btn").addEventListener("click", starCurrent);
+    qs("shuffle-btn").addEventListener("click", shuffleCurrentLesson);
+    qs("reset-score-btn").addEventListener("click", resetScore);
+
+    qs("mode-flashcard-btn").addEventListener("click", () => setMode("flashcard"));
+    qs("mode-choice-btn").addEventListener("click", () => setMode("choice"));
+    qs("mode-listen-btn").addEventListener("click", () => setMode("listen"));
+    qs("mode-spelling-btn").addEventListener("click", () => setMode("spelling"));
+    qs("mode-scramble-btn").addEventListener("click", () => setMode("scramble"));
+
+    qs("check-spelling-btn").addEventListener("click", checkSpelling);
+    qs("clear-spelling-btn").addEventListener("click", clearSpelling);
+    qs("spelling-input").addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){
+        checkSpelling();
+      }
+    });
+
+    qs("check-scramble-btn").addEventListener("click", checkScramble);
+    qs("clear-scramble-btn").addEventListener("click", clearScramble);
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".open-lesson-btn");
+      if(btn){
+        openLesson(btn.dataset.id);
+      }
+    });
+
+    initPage();
+  </script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Words Game</title>
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#f6f8ff;
+      color:#222;
+    }
+
+    .wrap{
+      max-width:1150px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:18px;
+      padding:20px;
+      margin-bottom:18px;
+      box-shadow:0 8px 22px rgba(0,0,0,0.08);
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .space{
+      justify-content:space-between;
+    }
+
+    .lesson-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:14px;
+      margin-top:14px;
+    }
+
+    .lesson-card{
+      background:#eef3ff;
+      border-radius:14px;
+      padding:16px;
+    }
+
+    .lesson-card h3{
+      margin:0 0 8px 0;
+    }
+
+    .play-area{
+      display:grid;
+      grid-template-columns:1fr 330px;
+      gap:18px;
+    }
+
+    .viewer{
+      background:#f8faff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:18px;
+      min-height:500px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      text-align:center;
+    }
+
+    .viewer img{
+      width:min(100%, 380px);
+      height:260px;
+      object-fit:contain;
+      background:#f0f0f0;
+      border-radius:16px;
+      margin-bottom:18px;
+    }
+
+    .word-big{
+      font-size:2rem;
+      font-weight:900;
+      margin:10px 0 6px;
+    }
+
+    .hint{
+      color:#666;
+      font-size:1rem;
+      margin-bottom:14px;
+    }
+
+    .side-panel{
+      background:#fbfcff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:16px;
+    }
+
+    .stat{
+      background:#eef3ff;
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:10px;
+      font-weight:700;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .mode-toggle{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .choice-grid{
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(140px, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+
+    .choice-btn{
+      width:100%;
+      min-height:58px;
+      font-size:1rem;
+    }
+
+    button{
+      padding:12px 14px;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      background:#3f6df6;
+      color:#fff;
+    }
+
+    button.secondary{
+      background:#6c757d;
+    }
+
+    button.success{
+      background:#0a8a35;
+    }
+
+    button.warning{
+      background:#f39c12;
+    }
+
+    button.danger{
+      background:#d33;
+    }
+
+    button.correct{
+      background:#0a8a35;
+    }
+
+    button.wrong{
+      background:#d33;
+    }
+
+    .muted{ color:#666; }
+    .success-text{ color:#0a8a35; font-weight:700; }
+    .error{ color:#c62828; font-weight:700; }
+
+    .hidden{
+      display:none !important;
+    }
+
+    @media (max-width: 860px){
+      .play-area{
+        grid-template-columns:1fr;
+      }
+
+      .choice-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row space">
+        <div>
+          <h1 style="margin:0 0 8px 0;">Words Game</h1>
+          <div id="auth-status" class="muted">Checking login…</div>
+        </div>
+        <div class="row">
+          <a href="../index.html"><button type="button" class="secondary">Back Home</button></a>
+          <a href="../creator.html"><button type="button" class="warning">Lesson Creator</button></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 style="margin:0;">My Lessons</h2>
+        <button id="refresh-lessons-btn" type="button">Refresh</button>
+      </div>
+      <div id="lessons-status" class="muted" style="margin-top:10px;">Loading lessons…</div>
+      <div id="lesson-list" class="lesson-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 id="current-lesson-title" style="margin:0;">Play Area</h2>
+        <div id="game-status" class="muted">Choose a lesson to start.</div>
+      </div>
+
+      <div class="play-area" style="margin-top:16px;">
+        <div class="viewer">
+          <div class="mode-toggle">
+            <button id="mode-flashcard-btn" type="button">Flashcard Mode</button>
+            <button id="mode-choice-btn" type="button" class="secondary">Multiple Choice</button>
+            <button id="mode-listen-btn" type="button" class="secondary">Listen & Choose</button>
+          </div>
+
+          <img id="word-image" alt="Lesson image" class="hidden" />
+          <div id="word-image-placeholder" class="muted">No image yet</div>
+
+          <div id="word-display" class="word-big">—</div>
+          <div id="word-hint" class="hint">Pick a lesson to begin.</div>
+
+          <div id="choice-area" class="choice-grid hidden"></div>
+        </div>
+
+        <div class="side-panel">
+          <div class="stat">Lesson: <span id="stat-lesson">—</span></div>
+          <div class="stat">Card: <span id="stat-index">0 / 0</span></div>
+          <div class="stat">Stars: <span id="stat-stars">0</span></div>
+          <div class="stat">Score: <span id="stat-score">0</span></div>
+          <div class="stat">Correct: <span id="stat-correct">0</span></div>
+          <div class="stat">Wrong: <span id="stat-wrong">0</span></div>
+
+          <div class="controls">
+            <button id="prev-btn" type="button" class="secondary">⬅ Prev</button>
+            <button id="next-btn" type="button">Next ➡</button>
+            <button id="reveal-btn" type="button" class="warning">👀 Reveal</button>
+            <button id="hide-btn" type="button" class="secondary">🙈 Hide</button>
+            <button id="speak-btn" type="button" class="success">🔊 Speak</button>
+            <button id="random-btn" type="button">🎲 Random</button>
+            <button id="star-btn" type="button" class="success">⭐ Star</button>
+            <button id="shuffle-btn" type="button" class="danger">🔀 Shuffle</button>
+            <button id="reset-score-btn" type="button" class="secondary">Reset Score</button>
+            <button id="replay-audio-btn" type="button" class="success">🎧 Replay</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="muted" style="margin-bottom:6px;">Word List</div>
+            <div id="mini-list" class="muted" style="line-height:1.7;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      bootAuth,
+      getSavedUser,
+      getLessons,
+      getImageUrl,
+      setSessionExpiredHandler
+    } from "./js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    let lessonsCache = [];
+    let currentLesson = null;
+    let currentItems = [];
+    let currentIndex = 0;
+    let revealWord = false;
+    let sessionStars = 0;
+    let score = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let gameMode = "flashcard";
+    let choiceOptions = [];
+    let answeredCurrent = false;
+    let autoSpeakTimer = null;
+
+    function setStatus(id, text, type = "muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function renderAuth(user = null){
+      if(user){
+        setStatus("auth-status", `Logged in as ${user.display_name || user.email}`, "success-text");
+      }else{
+        setStatus("auth-status", "Not logged in. Please login on the home page.", "error");
+      }
+    }
+
+    function normalizeItems(items){
+      return (items || []).map(item => ({
+        word: item.word || "",
+        image: item.image || null,
+        imageVersion: item.imageVersion || item.image_version || ""
+      })).filter(item => item.word);
+    }
+
+    function shuffleArray(arr){
+      const copy = [...arr];
+      for(let i = copy.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function uniqueWords(items){
+      return [...new Set(items.map(item => item.word).filter(Boolean))];
+    }
+
+    function buildChoices(){
+      if(!currentItems.length) return [];
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+      const pool = uniqueWords(currentItems).filter(w => w !== currentWord);
+      const shuffledPool = shuffleArray(pool);
+      const wrongChoices = shuffledPool.slice(0, 3);
+      return shuffleArray([currentWord, ...wrongChoices]);
+    }
+
+    function stopAutoSpeak(){
+      if(autoSpeakTimer){
+        clearTimeout(autoSpeakTimer);
+        autoSpeakTimer = null;
+      }
+    }
+
+    function renderLessons(){
+      const list = qs("lesson-list");
+      list.innerHTML = "";
+
+      if(!lessonsCache.length){
+        setStatus("lessons-status", "No lessons found.", "muted");
+        return;
+      }
+
+      setStatus("lessons-status", `${lessonsCache.length} lesson(s) found.`, "success-text");
+
+      lessonsCache.forEach((lesson) => {
+        const count = lesson?.data_json?.items?.length || 0;
+
+        const div = document.createElement("div");
+        div.className = "lesson-card";
+        div.innerHTML = `
+          <h3>${lesson.title}</h3>
+          <div class="muted" style="margin-bottom:12px;">
+            ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+          </div>
+          <button class="open-lesson-btn" data-id="${lesson.id}">
+            Open Lesson
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderMiniList(){
+      const el = qs("mini-list");
+
+      if(!currentItems.length){
+        el.textContent = "No items loaded.";
+        return;
+      }
+
+      el.innerHTML = currentItems
+        .map((item, index) => {
+          const active = index === currentIndex ? "style='font-weight:900;color:#1d3f9e;'" : "";
+          return `<div ${active}>${index + 1}. ${item.word || "(empty)"}</div>`;
+        })
+        .join("");
+    }
+
+    function renderStats(){
+      qs("stat-lesson").textContent = currentLesson?.title || "—";
+      qs("stat-index").textContent = currentItems.length ? `${currentIndex + 1} / ${currentItems.length}` : "0 / 0";
+      qs("stat-stars").textContent = String(sessionStars);
+      qs("stat-score").textContent = String(score);
+      qs("stat-correct").textContent = String(correctCount);
+      qs("stat-wrong").textContent = String(wrongCount);
+    }
+
+    function renderChoices(){
+      const choiceArea = qs("choice-area");
+      choiceArea.innerHTML = "";
+
+      if((gameMode !== "choice" && gameMode !== "listen") || !currentItems.length){
+        choiceArea.classList.add("hidden");
+        return;
+      }
+
+      choiceArea.classList.remove("hidden");
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+
+      choiceOptions.forEach(option => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+        btn.textContent = option;
+        btn.dataset.word = option;
+
+        if(answeredCurrent){
+          if(option === currentWord){
+            btn.classList.add("correct");
+          }
+        }
+
+        btn.addEventListener("click", () => chooseAnswer(option));
+        choiceArea.appendChild(btn);
+      });
+    }
+
+    function renderCard(){
+      const img = qs("word-image");
+      const placeholder = qs("word-image-placeholder");
+      const wordDisplay = qs("word-display");
+      const hint = qs("word-hint");
+
+      renderStats();
+
+      if(!currentLesson || !currentItems.length){
+        qs("current-lesson-title").textContent = "Play Area";
+        wordDisplay.textContent = "—";
+        hint.textContent = "Choose a lesson to begin.";
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image yet";
+        qs("choice-area").classList.add("hidden");
+        renderMiniList();
+        return;
+      }
+
+      const item = currentItems[currentIndex];
+      qs("current-lesson-title").textContent = currentLesson.title || "Lesson";
+
+      if(item?.image?.medium){
+        img.src = getImageUrl(item.image.medium, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else if(item?.image?.thumb){
+        img.src = getImageUrl(item.image.thumb, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else{
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image";
+      }
+
+      if(gameMode === "flashcard"){
+        wordDisplay.textContent = revealWord ? (item.word || "(empty)") : "•••••";
+        hint.textContent = revealWord
+          ? "Word revealed."
+          : "Try to guess the word, then reveal or speak it.";
+      } else if(gameMode === "choice"){
+        wordDisplay.textContent = "What word matches this picture?";
+        hint.textContent = answeredCurrent
+          ? "Choose Next for the next card."
+          : "Tap the correct answer below.";
+      } else {
+        wordDisplay.textContent = "Listen carefully 👂";
+        hint.textContent = answeredCurrent
+          ? "Choose Next for the next card."
+          : "Tap Replay or listen automatically, then choose the word you heard.";
+      }
+
+      renderChoices();
+      renderMiniList();
+    }
+
+    function startChoiceRound(){
+      answeredCurrent = false;
+      revealWord = false;
+      choiceOptions = buildChoices();
+      renderCard();
+    }
+
+    function startListenRound(){
+      answeredCurrent = false;
+      revealWord = false;
+      choiceOptions = buildChoices();
+      renderCard();
+      stopAutoSpeak();
+      autoSpeakTimer = setTimeout(() => {
+        speakCurrent();
+      }, 300);
+    }
+
+    function openLesson(lessonId){
+      currentLesson = lessonsCache.find(l => l.id === lessonId) || null;
+      currentItems = normalizeItems(currentLesson?.data_json?.items || []);
+      currentIndex = 0;
+      revealWord = false;
+      sessionStars = 0;
+      score = 0;
+      correctCount = 0;
+      wrongCount = 0;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+
+      if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "choice"){
+        startChoiceRound();
+      } else {
+        renderCard();
+      }
+
+      setStatus("game-status", "Lesson loaded.", "success-text");
+    }
+
+    function nextCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex + 1) % currentItems.length;
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function prevCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex - 1 + currentItems.length) % currentItems.length;
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function randomCard(){
+      if(!currentItems.length) return;
+      currentIndex = Math.floor(Math.random() * currentItems.length);
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function revealCurrent(){
+      if(!currentItems.length || gameMode !== "flashcard") return;
+      revealWord = true;
+      renderCard();
+    }
+
+    function hideCurrent(){
+      if(!currentItems.length || gameMode !== "flashcard") return;
+      revealWord = false;
+      renderCard();
+    }
+
+    function starCurrent(){
+      if(!currentItems.length) return;
+      sessionStars += 1;
+      setStatus("game-status", "Nice job! ⭐", "success-text");
+      renderCard();
+    }
+
+    function shuffleCurrentLesson(){
+      if(!currentItems.length) return;
+      currentItems = shuffleArray(currentItems);
+      currentIndex = 0;
+      revealWord = false;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      setStatus("game-status", "Lesson shuffled.", "success-text");
+
+      if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "choice"){
+        startChoiceRound();
+      } else {
+        renderCard();
+      }
+    }
+
+    function resetScore(){
+      score = 0;
+      correctCount = 0;
+      wrongCount = 0;
+      sessionStars = 0;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      setStatus("game-status", "Score reset.", "success-text");
+
+      if(gameMode === "listen"){
+        startListenRound();
+      } else if(gameMode === "choice"){
+        startChoiceRound();
+      } else {
+        renderCard();
+      }
+    }
+
+    function speakCurrent(){
+      if(!currentItems.length) return;
+      const text = currentItems[currentIndex]?.word || "";
+      if(!text) return;
+
+      try{
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.9;
+        utter.pitch = 1;
+        window.speechSynthesis.speak(utter);
+      }catch(err){
+        setStatus("game-status", "Speech failed on this device/browser.", "error");
+      }
+    }
+
+    function chooseAnswer(selectedWord){
+      if((gameMode !== "choice" && gameMode !== "listen") || !currentItems.length || answeredCurrent) return;
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+      answeredCurrent = true;
+
+      if(selectedWord === currentWord){
+        score += gameMode === "listen" ? 15 : 10;
+        correctCount += 1;
+        sessionStars += 1;
+        setStatus("game-status", `Correct! "${currentWord}" ⭐`, "success-text");
+      } else {
+        wrongCount += 1;
+        setStatus("game-status", `Oops! Correct answer: "${currentWord}"`, "error");
+      }
+
+      renderCard();
+
+      const buttons = [...document.querySelectorAll(".choice-btn")];
+      buttons.forEach(btn => {
+        const value = btn.dataset.word;
+        if(value === currentWord){
+          btn.classList.add("correct");
+        } else if(value === selectedWord && selectedWord !== currentWord){
+          btn.classList.add("wrong");
+        }
+      });
+    }
+
+    function setMode(mode){
+      gameMode = mode === "choice"
+        ? "choice"
+        : mode === "listen"
+          ? "listen"
+          : "flashcard";
+
+      qs("mode-flashcard-btn").classList.toggle("secondary", gameMode !== "flashcard");
+      qs("mode-choice-btn").classList.toggle("secondary", gameMode !== "choice");
+      qs("mode-listen-btn").classList.toggle("secondary", gameMode !== "listen");
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else if(gameMode === "listen"){
+        startListenRound();
+      } else {
+        stopAutoSpeak();
+        answeredCurrent = false;
+        choiceOptions = [];
+        renderCard();
+      }
+    }
+
+    async function loadLessons(){
+      try{
+        const res = await getLessons();
+        lessonsCache = Array.isArray(res.lessons) ? res.lessons : [];
+        renderLessons();
+      }catch(err){
+        setStatus("lessons-status", err.message || "Could not load lessons.", "error");
+      }
+    }
+
+    async function initPage(){
+      const savedUser = getSavedUser();
+      renderAuth(savedUser || null);
+
+      const auth = await bootAuth();
+      renderAuth(auth.user || null);
+
+      if(auth.ok){
+        await loadLessons();
+      }else{
+        setStatus("lessons-status", "Please login first on the home page.", "error");
+      }
+
+      renderCard();
+    }
+
+    function handleSessionExpired(){
+      renderAuth(null);
+      setStatus("lessons-status", "Session expired. Please login again.", "error");
+      setStatus("game-status", "Session expired.", "error");
+    }
+
+    setSessionExpiredHandler(handleSessionExpired);
+
+    qs("refresh-lessons-btn").addEventListener("click", loadLessons);
+    qs("prev-btn").addEventListener("click", prevCard);
+    qs("next-btn").addEventListener("click", nextCard);
+    qs("random-btn").addEventListener("click", randomCard);
+    qs("reveal-btn").addEventListener("click", revealCurrent);
+    qs("hide-btn").addEventListener("click", hideCurrent);
+    qs("speak-btn").addEventListener("click", speakCurrent);
+    qs("replay-audio-btn").addEventListener("click", speakCurrent);
+    qs("star-btn").addEventListener("click", starCurrent);
+    qs("shuffle-btn").addEventListener("click", shuffleCurrentLesson);
+    qs("reset-score-btn").addEventListener("click", resetScore);
+    qs("mode-flashcard-btn").addEventListener("click", () => setMode("flashcard"));
+    qs("mode-choice-btn").addEventListener("click", () => setMode("choice"));
+    qs("mode-listen-btn").addEventListener("click", () => setMode("listen"));
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".open-lesson-btn");
+      if(btn){
+        openLesson(btn.dataset.id);
+      }
+    });
+
+    initPage();
+  </script>
+</body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Words Game</title>
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#f6f8ff;
+      color:#222;
+    }
+
+    .wrap{
+      max-width:1150px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:18px;
+      padding:20px;
+      margin-bottom:18px;
+      box-shadow:0 8px 22px rgba(0,0,0,0.08);
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .space{
+      justify-content:space-between;
+    }
+
+    .lesson-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:14px;
+      margin-top:14px;
+    }
+
+    .lesson-card{
+      background:#eef3ff;
+      border-radius:14px;
+      padding:16px;
+    }
+
+    .lesson-card h3{
+      margin:0 0 8px 0;
+    }
+
+    .play-area{
+      display:grid;
+      grid-template-columns:1fr 330px;
+      gap:18px;
+    }
+
+    .viewer{
+      background:#f8faff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:18px;
+      min-height:480px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      text-align:center;
+    }
+
+    .viewer img{
+      width:min(100%, 380px);
+      height:260px;
+      object-fit:contain;
+      background:#f0f0f0;
+      border-radius:16px;
+      margin-bottom:18px;
+    }
+
+    .word-big{
+      font-size:2rem;
+      font-weight:900;
+      margin:10px 0 6px;
+    }
+
+    .hint{
+      color:#666;
+      font-size:1rem;
+      margin-bottom:14px;
+    }
+
+    .side-panel{
+      background:#fbfcff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:16px;
+    }
+
+    .stat{
+      background:#eef3ff;
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:10px;
+      font-weight:700;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .mode-toggle{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .choice-grid{
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(140px, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+
+    .choice-btn{
+      width:100%;
+      min-height:58px;
+      font-size:1rem;
+    }
+
+    button{
+      padding:12px 14px;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      background:#3f6df6;
+      color:#fff;
+    }
+
+    button.secondary{
+      background:#6c757d;
+    }
+
+    button.success{
+      background:#0a8a35;
+    }
+
+    button.warning{
+      background:#f39c12;
+    }
+
+    button.danger{
+      background:#d33;
+    }
+
+    button.correct{
+      background:#0a8a35;
+    }
+
+    button.wrong{
+      background:#d33;
+    }
+
+    .muted{ color:#666; }
+    .success-text{ color:#0a8a35; font-weight:700; }
+    .error{ color:#c62828; font-weight:700; }
+
+    .hidden{
+      display:none !important;
+    }
+
+    @media (max-width: 860px){
+      .play-area{
+        grid-template-columns:1fr;
+      }
+
+      .choice-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row space">
+        <div>
+          <h1 style="margin:0 0 8px 0;">Words Game</h1>
+          <div id="auth-status" class="muted">Checking login…</div>
+        </div>
+        <div class="row">
+          <a href="../index.html"><button type="button" class="secondary">Back Home</button></a>
+          <a href="../creator.html"><button type="button" class="warning">Lesson Creator</button></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 style="margin:0;">My Lessons</h2>
+        <button id="refresh-lessons-btn" type="button">Refresh</button>
+      </div>
+      <div id="lessons-status" class="muted" style="margin-top:10px;">Loading lessons…</div>
+      <div id="lesson-list" class="lesson-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 id="current-lesson-title" style="margin:0;">Play Area</h2>
+        <div id="game-status" class="muted">Choose a lesson to start.</div>
+      </div>
+
+      <div class="play-area" style="margin-top:16px;">
+        <div class="viewer">
+          <div class="mode-toggle">
+            <button id="mode-flashcard-btn" type="button">Flashcard Mode</button>
+            <button id="mode-choice-btn" type="button" class="secondary">Multiple Choice</button>
+          </div>
+
+          <img id="word-image" alt="Lesson image" class="hidden" />
+          <div id="word-image-placeholder" class="muted">No image yet</div>
+
+          <div id="word-display" class="word-big">—</div>
+          <div id="word-hint" class="hint">Pick a lesson to begin.</div>
+
+          <div id="choice-area" class="choice-grid hidden"></div>
+        </div>
+
+        <div class="side-panel">
+          <div class="stat">Lesson: <span id="stat-lesson">—</span></div>
+          <div class="stat">Card: <span id="stat-index">0 / 0</span></div>
+          <div class="stat">Stars: <span id="stat-stars">0</span></div>
+          <div class="stat">Score: <span id="stat-score">0</span></div>
+          <div class="stat">Correct: <span id="stat-correct">0</span></div>
+          <div class="stat">Wrong: <span id="stat-wrong">0</span></div>
+
+          <div class="controls">
+            <button id="prev-btn" type="button" class="secondary">⬅ Prev</button>
+            <button id="next-btn" type="button">Next ➡</button>
+            <button id="reveal-btn" type="button" class="warning">👀 Reveal</button>
+            <button id="hide-btn" type="button" class="secondary">🙈 Hide</button>
+            <button id="speak-btn" type="button" class="success">🔊 Speak</button>
+            <button id="random-btn" type="button">🎲 Random</button>
+            <button id="star-btn" type="button" class="success">⭐ Star</button>
+            <button id="shuffle-btn" type="button" class="danger">🔀 Shuffle</button>
+            <button id="reset-score-btn" type="button" class="secondary">Reset Score</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="muted" style="margin-bottom:6px;">Word List</div>
+            <div id="mini-list" class="muted" style="line-height:1.7;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      bootAuth,
+      getSavedUser,
+      getLessons,
+      getImageUrl,
+      setSessionExpiredHandler
+    } from "./js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    let lessonsCache = [];
+    let currentLesson = null;
+    let currentItems = [];
+    let currentIndex = 0;
+    let revealWord = false;
+    let sessionStars = 0;
+    let score = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let gameMode = "flashcard";
+    let choiceOptions = [];
+    let answeredCurrent = false;
+
+    function setStatus(id, text, type = "muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function renderAuth(user = null){
+      if(user){
+        setStatus("auth-status", `Logged in as ${user.display_name || user.email}`, "success-text");
+      }else{
+        setStatus("auth-status", "Not logged in. Please login on the home page.", "error");
+      }
+    }
+
+    function normalizeItems(items){
+      return (items || []).map(item => ({
+        word: item.word || "",
+        image: item.image || null,
+        imageVersion: item.imageVersion || item.image_version || ""
+      })).filter(item => item.word);
+    }
+
+    function shuffleArray(arr){
+      const copy = [...arr];
+      for(let i = copy.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function uniqueWords(items){
+      return [...new Set(items.map(item => item.word).filter(Boolean))];
+    }
+
+    function buildChoices(){
+      if(!currentItems.length) return [];
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+      const pool = uniqueWords(currentItems).filter(w => w !== currentWord);
+      const shuffledPool = shuffleArray(pool);
+      const wrongChoices = shuffledPool.slice(0, 3);
+      const all = shuffleArray([currentWord, ...wrongChoices]);
+
+      return all;
+    }
+
+    function renderLessons(){
+      const list = qs("lesson-list");
+      list.innerHTML = "";
+
+      if(!lessonsCache.length){
+        setStatus("lessons-status", "No lessons found.", "muted");
+        return;
+      }
+
+      setStatus("lessons-status", `${lessonsCache.length} lesson(s) found.`, "success-text");
+
+      lessonsCache.forEach((lesson) => {
+        const count = lesson?.data_json?.items?.length || 0;
+
+        const div = document.createElement("div");
+        div.className = "lesson-card";
+        div.innerHTML = `
+          <h3>${lesson.title}</h3>
+          <div class="muted" style="margin-bottom:12px;">
+            ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+          </div>
+          <button class="open-lesson-btn" data-id="${lesson.id}">
+            Open Lesson
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderMiniList(){
+      const el = qs("mini-list");
+
+      if(!currentItems.length){
+        el.textContent = "No items loaded.";
+        return;
+      }
+
+      el.innerHTML = currentItems
+        .map((item, index) => {
+          const active = index === currentIndex ? "style='font-weight:900;color:#1d3f9e;'" : "";
+          return `<div ${active}>${index + 1}. ${item.word || "(empty)"}</div>`;
+        })
+        .join("");
+    }
+
+    function renderStats(){
+      qs("stat-lesson").textContent = currentLesson?.title || "—";
+      qs("stat-index").textContent = currentItems.length ? `${currentIndex + 1} / ${currentItems.length}` : "0 / 0";
+      qs("stat-stars").textContent = String(sessionStars);
+      qs("stat-score").textContent = String(score);
+      qs("stat-correct").textContent = String(correctCount);
+      qs("stat-wrong").textContent = String(wrongCount);
+    }
+
+    function renderChoices(){
+      const choiceArea = qs("choice-area");
+      choiceArea.innerHTML = "";
+
+      if(gameMode !== "choice" || !currentItems.length){
+        choiceArea.classList.add("hidden");
+        return;
+      }
+
+      choiceArea.classList.remove("hidden");
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+
+      choiceOptions.forEach(option => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+        btn.textContent = option;
+        btn.dataset.word = option;
+
+        if(answeredCurrent){
+          if(option === currentWord){
+            btn.classList.add("correct");
+          }
+        }
+
+        btn.addEventListener("click", () => chooseAnswer(option));
+        choiceArea.appendChild(btn);
+      });
+    }
+
+    function renderCard(){
+      const img = qs("word-image");
+      const placeholder = qs("word-image-placeholder");
+      const wordDisplay = qs("word-display");
+      const hint = qs("word-hint");
+
+      renderStats();
+
+      if(!currentLesson || !currentItems.length){
+        qs("current-lesson-title").textContent = "Play Area";
+        wordDisplay.textContent = "—";
+        hint.textContent = "Choose a lesson to begin.";
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image yet";
+        qs("choice-area").classList.add("hidden");
+        renderMiniList();
+        return;
+      }
+
+      const item = currentItems[currentIndex];
+      qs("current-lesson-title").textContent = currentLesson.title || "Lesson";
+
+      if(item?.image?.medium){
+        img.src = getImageUrl(item.image.medium, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else if(item?.image?.thumb){
+        img.src = getImageUrl(item.image.thumb, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else{
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image";
+      }
+
+      if(gameMode === "flashcard"){
+        wordDisplay.textContent = revealWord ? (item.word || "(empty)") : "•••••";
+        hint.textContent = revealWord
+          ? "Word revealed."
+          : "Try to guess the word, then reveal or speak it.";
+      } else {
+        wordDisplay.textContent = "What word matches this picture?";
+        hint.textContent = answeredCurrent
+          ? "Choose Next for the next card."
+          : "Tap the correct answer below.";
+      }
+
+      renderChoices();
+      renderMiniList();
+    }
+
+    function startChoiceRound(){
+      answeredCurrent = false;
+      revealWord = false;
+      choiceOptions = buildChoices();
+      renderCard();
+    }
+
+    function openLesson(lessonId){
+      currentLesson = lessonsCache.find(l => l.id === lessonId) || null;
+      currentItems = normalizeItems(currentLesson?.data_json?.items || []);
+      currentIndex = 0;
+      revealWord = false;
+      sessionStars = 0;
+      score = 0;
+      correctCount = 0;
+      wrongCount = 0;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      renderCard();
+      setStatus("game-status", "Lesson loaded.", "success-text");
+    }
+
+    function nextCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex + 1) % currentItems.length;
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function prevCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex - 1 + currentItems.length) % currentItems.length;
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function randomCard(){
+      if(!currentItems.length) return;
+      currentIndex = Math.floor(Math.random() * currentItems.length);
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else {
+        revealWord = false;
+        renderCard();
+      }
+    }
+
+    function revealCurrent(){
+      if(!currentItems.length || gameMode !== "flashcard") return;
+      revealWord = true;
+      renderCard();
+    }
+
+    function hideCurrent(){
+      if(!currentItems.length || gameMode !== "flashcard") return;
+      revealWord = false;
+      renderCard();
+    }
+
+    function starCurrent(){
+      if(!currentItems.length) return;
+      sessionStars += 1;
+      setStatus("game-status", "Nice job! ⭐", "success-text");
+      renderCard();
+    }
+
+    function shuffleCurrentLesson(){
+      if(!currentItems.length) return;
+      currentItems = shuffleArray(currentItems);
+      currentIndex = 0;
+      revealWord = false;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      setStatus("game-status", "Lesson shuffled.", "success-text");
+      renderCard();
+    }
+
+    function resetScore(){
+      score = 0;
+      correctCount = 0;
+      wrongCount = 0;
+      sessionStars = 0;
+      answeredCurrent = false;
+      choiceOptions = buildChoices();
+      setStatus("game-status", "Score reset.", "success-text");
+      renderCard();
+    }
+
+    function speakCurrent(){
+      if(!currentItems.length) return;
+      const text = currentItems[currentIndex]?.word || "";
+      if(!text) return;
+
+      try{
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.9;
+        utter.pitch = 1;
+        window.speechSynthesis.speak(utter);
+      }catch(err){
+        setStatus("game-status", "Speech failed on this device/browser.", "error");
+      }
+    }
+
+    function chooseAnswer(selectedWord){
+      if(gameMode !== "choice" || !currentItems.length || answeredCurrent) return;
+
+      const currentWord = currentItems[currentIndex]?.word || "";
+      answeredCurrent = true;
+
+      if(selectedWord === currentWord){
+        score += 10;
+        correctCount += 1;
+        sessionStars += 1;
+        setStatus("game-status", `Correct! "${currentWord}" ⭐`, "success-text");
+      } else {
+        wrongCount += 1;
+        setStatus("game-status", `Oops! Correct answer: "${currentWord}"`, "error");
+      }
+
+      renderCard();
+
+      const buttons = [...document.querySelectorAll(".choice-btn")];
+      buttons.forEach(btn => {
+        const value = btn.dataset.word;
+        if(value === currentWord){
+          btn.classList.add("correct");
+        } else if(value === selectedWord && selectedWord !== currentWord){
+          btn.classList.add("wrong");
+        }
+      });
+    }
+
+    function setMode(mode){
+      gameMode = mode === "choice" ? "choice" : "flashcard";
+
+      qs("mode-flashcard-btn").classList.toggle("secondary", gameMode !== "flashcard");
+      qs("mode-choice-btn").classList.toggle("secondary", gameMode !== "choice");
+
+      if(gameMode === "choice"){
+        startChoiceRound();
+      } else {
+        answeredCurrent = false;
+        choiceOptions = [];
+        renderCard();
+      }
+    }
+
+    async function loadLessons(){
+      try{
+        const res = await getLessons();
+        lessonsCache = Array.isArray(res.lessons) ? res.lessons : [];
+        renderLessons();
+      }catch(err){
+        setStatus("lessons-status", err.message || "Could not load lessons.", "error");
+      }
+    }
+
+    async function initPage(){
+      const savedUser = getSavedUser();
+      renderAuth(savedUser || null);
+
+      const auth = await bootAuth();
+      renderAuth(auth.user || null);
+
+      if(auth.ok){
+        await loadLessons();
+      }else{
+        setStatus("lessons-status", "Please login first on the home page.", "error");
+      }
+
+      renderCard();
+    }
+
+    function handleSessionExpired(){
+      renderAuth(null);
+      setStatus("lessons-status", "Session expired. Please login again.", "error");
+      setStatus("game-status", "Session expired.", "error");
+    }
+
+    setSessionExpiredHandler(handleSessionExpired);
+
+    qs("refresh-lessons-btn").addEventListener("click", loadLessons);
+    qs("prev-btn").addEventListener("click", prevCard);
+    qs("next-btn").addEventListener("click", nextCard);
+    qs("random-btn").addEventListener("click", randomCard);
+    qs("reveal-btn").addEventListener("click", revealCurrent);
+    qs("hide-btn").addEventListener("click", hideCurrent);
+    qs("speak-btn").addEventListener("click", speakCurrent);
+    qs("star-btn").addEventListener("click", starCurrent);
+    qs("shuffle-btn").addEventListener("click", shuffleCurrentLesson);
+    qs("reset-score-btn").addEventListener("click", resetScore);
+    qs("mode-flashcard-btn").addEventListener("click", () => setMode("flashcard"));
+    qs("mode-choice-btn").addEventListener("click", () => setMode("choice"));
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".open-lesson-btn");
+      if(btn){
+        openLesson(btn.dataset.id);
+      }
+    });
+
+    initPage();
+  </script>
+</body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Words Game</title>
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      background:#f6f8ff;
+      color:#222;
+    }
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:18px;
+      padding:20px;
+      margin-bottom:18px;
+      box-shadow:0 8px 22px rgba(0,0,0,0.08);
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .space{
+      justify-content:space-between;
+    }
+
+    .lesson-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:14px;
+      margin-top:14px;
+    }
+
+    .lesson-card{
+      background:#eef3ff;
+      border-radius:14px;
+      padding:16px;
+    }
+
+    .lesson-card h3{
+      margin:0 0 8px 0;
+    }
+
+    .play-area{
+      display:grid;
+      grid-template-columns:1fr 320px;
+      gap:18px;
+    }
+
+    .viewer{
+      background:#f8faff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:18px;
+      min-height:420px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+
+    .viewer img{
+      width:min(100%, 380px);
+      height:260px;
+      object-fit:contain;
+      background:#f0f0f0;
+      border-radius:16px;
+      margin-bottom:18px;
+    }
+
+    .word-big{
+      font-size:2rem;
+      font-weight:900;
+      margin:10px 0 6px;
+    }
+
+    .hint{
+      color:#666;
+      font-size:1rem;
+    }
+
+    .side-panel{
+      background:#fbfcff;
+      border:1px solid #e3e9f7;
+      border-radius:16px;
+      padding:16px;
+    }
+
+    .stat{
+      background:#eef3ff;
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:10px;
+      font-weight:700;
+    }
+
+    .controls{
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+
+    button{
+      padding:12px 14px;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      background:#3f6df6;
+      color:#fff;
+    }
+
+    button.secondary{
+      background:#6c757d;
+    }
+
+    button.success{
+      background:#0a8a35;
+    }
+
+    button.warning{
+      background:#f39c12;
+    }
+
+    button.danger{
+      background:#d33;
+    }
+
+    .muted{ color:#666; }
+    .success-text{ color:#0a8a35; font-weight:700; }
+    .error{ color:#c62828; font-weight:700; }
+
+    .hidden{
+      display:none;
+    }
+
+    @media (max-width: 860px){
+      .play-area{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row space">
+        <div>
+          <h1 style="margin:0 0 8px 0;">Words Game</h1>
+          <div id="auth-status" class="muted">Checking login…</div>
+        </div>
+        <div class="row">
+          <a href="../index.html"><button type="button" class="secondary">Back Home</button></a>
+          <a href="../creator.html"><button type="button" class="warning">Lesson Creator</button></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 style="margin:0;">My Lessons</h2>
+        <button id="refresh-lessons-btn" type="button">Refresh</button>
+      </div>
+      <div id="lessons-status" class="muted" style="margin-top:10px;">Loading lessons…</div>
+      <div id="lesson-list" class="lesson-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="row space">
+        <h2 id="current-lesson-title" style="margin:0;">Play Area</h2>
+        <div id="game-status" class="muted">Choose a lesson to start.</div>
+      </div>
+
+      <div class="play-area" style="margin-top:16px;">
+        <div class="viewer">
+          <img id="word-image" alt="Lesson image" class="hidden" />
+          <div id="word-image-placeholder" class="muted">No image yet</div>
+
+          <div id="word-display" class="word-big">—</div>
+          <div id="word-hint" class="hint">Pick a lesson to begin.</div>
+        </div>
+
+        <div class="side-panel">
+          <div class="stat">Lesson: <span id="stat-lesson">—</span></div>
+          <div class="stat">Card: <span id="stat-index">0 / 0</span></div>
+          <div class="stat">Stars: <span id="stat-stars">0</span></div>
+
+          <div class="controls">
+            <button id="prev-btn" type="button" class="secondary">⬅ Prev</button>
+            <button id="next-btn" type="button">Next ➡</button>
+            <button id="reveal-btn" type="button" class="warning">👀 Reveal</button>
+            <button id="hide-btn" type="button" class="secondary">🙈 Hide</button>
+            <button id="speak-btn" type="button" class="success">🔊 Speak</button>
+            <button id="random-btn" type="button">🎲 Random</button>
+            <button id="star-btn" type="button" class="success">⭐ Star</button>
+            <button id="shuffle-btn" type="button" class="danger">🔀 Shuffle</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="muted" style="margin-bottom:6px;">Word List</div>
+            <div id="mini-list" class="muted" style="line-height:1.7;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      bootAuth,
+      getSavedUser,
+      getLessons,
+      getImageUrl,
+      setSessionExpiredHandler
+    } from "./js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    let lessonsCache = [];
+    let currentLesson = null;
+    let currentItems = [];
+    let currentIndex = 0;
+    let revealWord = false;
+    let sessionStars = 0;
+
+    function setStatus(id, text, type = "muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function renderAuth(user = null){
+      if(user){
+        setStatus("auth-status", `Logged in as ${user.display_name || user.email}`, "success-text");
+      }else{
+        setStatus("auth-status", "Not logged in. Please login on the home page.", "error");
+      }
+    }
+
+    function normalizeItems(items){
+      return (items || []).map(item => ({
+        word: item.word || "",
+        image: item.image || null,
+        imageVersion: item.imageVersion || item.image_version || ""
+      }));
+    }
+
+    function shuffleArray(arr){
+      const copy = [...arr];
+      for(let i = copy.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function renderLessons(){
+      const list = qs("lesson-list");
+      list.innerHTML = "";
+
+      if(!lessonsCache.length){
+        setStatus("lessons-status", "No lessons found.", "muted");
+        return;
+      }
+
+      setStatus("lessons-status", `${lessonsCache.length} lesson(s) found.`, "success-text");
+
+      lessonsCache.forEach((lesson) => {
+        const count = lesson?.data_json?.items?.length || 0;
+
+        const div = document.createElement("div");
+        div.className = "lesson-card";
+        div.innerHTML = `
+          <h3>${lesson.title}</h3>
+          <div class="muted" style="margin-bottom:12px;">
+            ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+          </div>
+          <button class="open-lesson-btn" data-id="${lesson.id}">
+            Open Lesson
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderMiniList(){
+      const el = qs("mini-list");
+
+      if(!currentItems.length){
+        el.textContent = "No items loaded.";
+        return;
+      }
+
+      el.innerHTML = currentItems
+        .map((item, index) => {
+          const active = index === currentIndex ? "style='font-weight:900;color:#1d3f9e;'" : "";
+          return `<div ${active}>${index + 1}. ${item.word || "(empty)"}</div>`;
+        })
+        .join("");
+    }
+
+    function renderCard(){
+      const img = qs("word-image");
+      const placeholder = qs("word-image-placeholder");
+      const wordDisplay = qs("word-display");
+      const hint = qs("word-hint");
+
+      if(!currentLesson || !currentItems.length){
+        qs("current-lesson-title").textContent = "Play Area";
+        qs("stat-lesson").textContent = "—";
+        qs("stat-index").textContent = "0 / 0";
+        wordDisplay.textContent = "—";
+        hint.textContent = "Choose a lesson to begin.";
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image yet";
+        renderMiniList();
+        return;
+      }
+
+      const item = currentItems[currentIndex];
+      qs("current-lesson-title").textContent = currentLesson.title || "Lesson";
+      qs("stat-lesson").textContent = currentLesson.title || "—";
+      qs("stat-index").textContent = `${currentIndex + 1} / ${currentItems.length}`;
+      qs("stat-stars").textContent = String(sessionStars);
+
+      if(item?.image?.medium){
+        img.src = getImageUrl(item.image.medium, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else if(item?.image?.thumb){
+        img.src = getImageUrl(item.image.thumb, item.imageVersion);
+        img.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+      }else{
+        img.classList.add("hidden");
+        img.removeAttribute("src");
+        placeholder.classList.remove("hidden");
+        placeholder.textContent = "No image";
+      }
+
+      wordDisplay.textContent = revealWord ? (item.word || "(empty)") : "•••••";
+      hint.textContent = revealWord
+        ? "Word revealed."
+        : "Try to guess the word, then reveal or speak it.";
+
+      setStatus("game-status", "Lesson loaded.", "success-text");
+      renderMiniList();
+    }
+
+    function openLesson(lessonId){
+      currentLesson = lessonsCache.find(l => l.id === lessonId) || null;
+      currentItems = normalizeItems(currentLesson?.data_json?.items || []);
+      currentIndex = 0;
+      revealWord = false;
+      sessionStars = 0;
+      renderCard();
+    }
+
+    function nextCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex + 1) % currentItems.length;
+      revealWord = false;
+      renderCard();
+    }
+
+    function prevCard(){
+      if(!currentItems.length) return;
+      currentIndex = (currentIndex - 1 + currentItems.length) % currentItems.length;
+      revealWord = false;
+      renderCard();
+    }
+
+    function randomCard(){
+      if(!currentItems.length) return;
+      currentIndex = Math.floor(Math.random() * currentItems.length);
+      revealWord = false;
+      renderCard();
+    }
+
+    function revealCurrent(){
+      if(!currentItems.length) return;
+      revealWord = true;
+      renderCard();
+    }
+
+    function hideCurrent(){
+      if(!currentItems.length) return;
+      revealWord = false;
+      renderCard();
+    }
+
+    function starCurrent(){
+      if(!currentItems.length) return;
+      sessionStars += 1;
+      setStatus("game-status", "Nice job! ⭐", "success-text");
+      renderCard();
+    }
+
+    function shuffleCurrentLesson(){
+      if(!currentItems.length) return;
+      currentItems = shuffleArray(currentItems);
+      currentIndex = 0;
+      revealWord = false;
+      setStatus("game-status", "Lesson shuffled.", "success-text");
+      renderCard();
+    }
+
+    function speakCurrent(){
+      if(!currentItems.length) return;
+      const text = currentItems[currentIndex]?.word || "";
+      if(!text) return;
+
+      try{
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.9;
+        utter.pitch = 1;
+        window.speechSynthesis.speak(utter);
+      }catch(err){
+        setStatus("game-status", "Speech failed on this device/browser.", "error");
+      }
+    }
+
+    async function loadLessons(){
+      try{
+        const res = await getLessons();
+        lessonsCache = Array.isArray(res.lessons) ? res.lessons : [];
+        renderLessons();
+      }catch(err){
+        setStatus("lessons-status", err.message || "Could not load lessons.", "error");
+      }
+    }
+
+    async function initPage(){
+      const savedUser = getSavedUser();
+      renderAuth(savedUser || null);
+
+      const auth = await bootAuth();
+      renderAuth(auth.user || null);
+
+      if(auth.ok){
+        await loadLessons();
+      }else{
+        setStatus("lessons-status", "Please login first on the home page.", "error");
+      }
+
+      renderCard();
+    }
+
+    function handleSessionExpired(){
+      renderAuth(null);
+      setStatus("lessons-status", "Session expired. Please login again.", "error");
+      setStatus("game-status", "Session expired.", "error");
+    }
+
+    setSessionExpiredHandler(handleSessionExpired);
+
+    qs("refresh-lessons-btn").addEventListener("click", loadLessons);
+    qs("prev-btn").addEventListener("click", prevCard);
+    qs("next-btn").addEventListener("click", nextCard);
+    qs("random-btn").addEventListener("click", randomCard);
+    qs("reveal-btn").addEventListener("click", revealCurrent);
+    qs("hide-btn").addEventListener("click", hideCurrent);
+    qs("speak-btn").addEventListener("click", speakCurrent);
+    qs("star-btn").addEventListener("click", starCurrent);
+    qs("shuffle-btn").addEventListener("click", shuffleCurrentLesson);
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".open-lesson-btn");
+      if(btn){
+        openLesson(btn.dataset.id);
+      }
+    });
+
+    initPage();
+  </script>
+</body>
+</html> -->

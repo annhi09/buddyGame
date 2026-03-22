@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy - Lesson Creator</title>
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background:#f5f7ff;
+      margin:0;
+      padding:20px;
+      color:#222;
+    }
+    .wrap{
+      max-width:1000px;
+      margin:0 auto;
+    }
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:20px;
+      box-shadow:0 8px 24px rgba(0,0,0,.08);
+    }
+    h1,h2{
+      margin-top:0;
+    }
+    input, select, button{
+      width:100%;
+      box-sizing:border-box;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      margin:8px 0 14px;
+      font-size:16px;
+    }
+    button{
+      background:#4a7dff;
+      color:#fff;
+      border:none;
+      cursor:pointer;
+      font-weight:700;
+    }
+    button.secondary{
+      background:#666;
+    }
+    button.danger{
+      background:#d64545;
+    }
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    .item{
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:14px;
+      margin-bottom:12px;
+      background:#fafafa;
+    }
+    .preview-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+      gap:14px;
+    }
+    .preview-card{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:10px;
+      text-align:center;
+    }
+    .preview-card img{
+      width:100%;
+      max-height:140px;
+      object-fit:contain;
+      border-radius:8px;
+      background:#f0f0f0;
+    }
+    .muted{
+      color:#666;
+      font-size:14px;
+    }
+    .success{
+      color:#0a8a3a;
+      font-weight:700;
+    }
+    .error{
+      color:#c62828;
+      font-weight:700;
+    }
+    .lesson-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+      gap:12px;
+    }
+    .lesson-tile{
+      border:1px solid #ddd;
+      border-radius:12px;
+      background:#fafafa;
+      padding:12px;
+    }
+    .lesson-tile h3{
+      margin:0 0 6px 0;
+      font-size:18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Parent Lesson Creator</h1>
+
+    <div class="card">
+      <h2>1) Login</h2>
+      <div class="row">
+        <div>
+          <label>Email</label>
+          <input id="login-email" type="email" placeholder="parent@example.com" />
+        </div>
+        <div>
+          <label>Password</label>
+          <input id="login-password" type="password" placeholder="password" />
+        </div>
+      </div>
+      <button id="login-btn">Login</button>
+      <button id="logout-btn" type="button">Logout</button>
+      <div id="login-status" class="muted">Not logged in.</div>
+    </div>
+
+    <div class="card">
+      <h2>2) Existing Lessons</h2>
+      <button id="refresh-lessons-btn" class="secondary">Refresh Lesson List</button>
+      <div id="existing-lessons" class="lesson-list"></div>
+      <div id="existing-lessons-status" class="muted">No lessons loaded yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>3) Lesson Info</h2>
+      <label>Lesson Title</label>
+      <input id="lesson-title" type="text" placeholder="Animals" />
+
+      <div class="row">
+        <div>
+          <label>Type</label>
+          <select id="lesson-type">
+            <option value="words">Words</option>
+            <option value="reading">Reading</option>
+            <option value="math">Math</option>
+          </select>
+        </div>
+        <div>
+          <label>Visibility</label>
+          <select id="lesson-visibility">
+            <option value="private">Private</option>
+            <option value="shared">Shared</option>
+            <option value="public">Public</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="create-lesson-btn">Create New Lesson</button>
+        <button id="save-lesson-info-btn" class="secondary">Save Lesson Info</button>
+      </div>
+
+      <button id="delete-lesson-btn" class="danger">Delete Current Lesson</button>
+
+      <!-- <div class="row">
+        <button id="create-lesson-btn">Create New Lesson</button>
+        <button id="save-lesson-info-btn" class="secondary">Save Lesson Info</button>
+      </div> -->
+
+      <div id="lesson-status" class="muted">No lesson selected yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>4) Add / Edit Items</h2>
+      <div id="items-wrap"></div>
+      <div class="row">
+        <button id="add-item-btn" class="secondary">Add Word Item</button>
+        <button id="save-items-btn">Save Items To Lesson</button>
+      </div>
+      <div id="items-status" class="muted">No items saved yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>5) Preview</h2>
+      <div id="preview-wrap" class="preview-grid"></div>
+    </div>
+  </div>
+
+  <script type="module">
+
+    import {
+  login,
+  getLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+  uploadLessonImage,
+  deleteLessonItemImage,
+  getImageUrl,
+  getToken,
+  getSavedUser,
+  bootAuth,
+  logout,
+  setSessionExpiredHandler
+} from "./js/api.js";
+// import {
+//   login,
+//   getLessons,
+//   createLesson,
+//   updateLesson,
+//   deleteLesson,
+//   uploadLessonImage,
+//   deleteLessonItemImage,
+//   getImageUrl,
+//   getToken
+// } from "./js/api.js";
+
+let currentLessonId = null;
+let currentItems = [];
+let lessonsCache = [];
+
+const qs = (id) => document.getElementById(id);
+
+function setStatus(id, text, type = "muted"){
+  const el = qs(id);
+  el.className = type;
+  el.textContent = text;
+}
+
+function toItemKey(word){
+  return String(word || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function makeItem(word = "", image = null){
+  return {
+    word,
+    image,
+    imageKey: word ? toItemKey(word) : "",
+    imageVersion: ""
+  };
+}
+
+function fillLessonForm(lesson){
+  qs("lesson-title").value = lesson.title || "";
+  qs("lesson-type").value = lesson.type || "words";
+  qs("lesson-visibility").value = lesson.visibility || "private";
+}
+
+// function cloneItems(items){
+//   return (items || []).map(item => ({
+//     word: item.word || "",
+//     image: item.image || null,
+//     imageKey: item.imageKey || item.image_key || toItemKey(item.word || "")
+//   }));
+// }
+
+function cloneItems(items){
+  return (items || []).map(item => ({
+    word: item.word || "",
+    image: item.image || null,
+    imageKey: item.imageKey || item.image_key || toItemKey(item.word || ""),
+    imageVersion: item.imageVersion || item.image_version || ""
+  }));
+}
+
+function renderExistingLessons(){
+  const wrap = qs("existing-lessons");
+  wrap.innerHTML = "";
+
+  if(!lessonsCache.length){
+    setStatus("existing-lessons-status", "No lessons found.", "muted");
+    return;
+  }
+
+  lessonsCache.forEach((lesson) => {
+    const count = lesson?.data_json?.items?.length || 0;
+
+    const div = document.createElement("div");
+    div.className = "lesson-tile";
+    div.innerHTML = `
+      <h3>${lesson.title}</h3>
+      <div class="muted" style="margin-bottom:10px;">
+        ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+      </div>
+      <button class="edit-lesson-btn" data-id="${lesson.id}">
+        Edit Lesson
+      </button>
+    `;
+    wrap.appendChild(div);
+  });
+
+  setStatus("existing-lessons-status", `${lessonsCache.length} lesson(s) loaded.`, "success");
+}
+
+function renderItemsEditor(){
+  const wrap = qs("items-wrap");
+  wrap.innerHTML = "";
+
+  currentItems.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <label>Word</label>
+      <input type="text" class="item-word" data-index="${index}" value="${item.word || ""}" placeholder="cat" />
+
+      <label>Image</label>
+      <input type="file" class="item-image" data-index="${index}" accept="image/png,image/jpeg,image/webp" />
+
+      <div class="row">
+        <button class="upload-btn secondary" data-index="${index}">Upload Image</button>
+        <button class="delete-image-btn secondary" data-index="${index}">Delete Image</button>
+      </div>
+
+      <button class="remove-btn danger" data-index="${index}">Remove Item</button>
+
+      <div style="margin-top:10px;">
+        ${
+          item.image?.thumb
+  ? `<img src="${getImageUrl(item.image.thumb, item.imageVersion)}" alt="${item.word || ""}" style="width:140px;height:140px;object-fit:contain;background:#f0f0f0;border-radius:10px;display:block;margin-bottom:8px;">`
+            : `<div class="muted" style="padding:14px 0;">No image uploaded yet.</div>`
+        }
+        <div class="muted">
+          ${item.image?.medium ? `Uploaded for "${item.word || ""}"` : ""}
+        </div>
+      </div>
+    `;
+
+    wrap.appendChild(div);
+  });
+
+  renderPreview();
+}
+
+function renderPreview(){
+  const wrap = qs("preview-wrap");
+  wrap.innerHTML = "";
+
+  currentItems.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "preview-card";
+
+    let html = `<div><strong>${item.word || "(empty word)"}</strong></div>`;
+    if(item.image?.thumb){
+      html += `<img src="${getImageUrl(item.image.thumb, item.imageVersion)}" alt="${item.word || ""}" />`;
+    } else {
+      html += `<div class="muted" style="padding:30px 0;">No image</div>`;
+    }
+
+    card.innerHTML = html;
+    wrap.appendChild(card);
+  });
+}
+
+function renderAuthState(user = null){
+  const loginStatus = qs("login-status");
+
+  if(user){
+    loginStatus.className = "success";
+    loginStatus.textContent = `Logged in as ${user.display_name || user.email}`;
+  } else {
+    loginStatus.className = "muted";
+    loginStatus.textContent = "Not logged in.";
+  }
+}
+
+setSessionExpiredHandler(handleSessionExpired);
+
+async function initAuth(){
+  const savedUser = getSavedUser();
+  if(savedUser){
+    renderAuthState(savedUser);
+  } else {
+    renderAuthState(null);
+  }
+
+  const result = await bootAuth();
+
+  if(result.ok && result.user){
+    renderAuthState(result.user);
+    await loadExistingLessons();
+  } else {
+    renderAuthState(null);
+    setStatus("existing-lessons-status", "Please login first.", "muted");
+  }
+}
+
+function handleSessionExpired(){
+  renderAuthState(null);
+  setStatus("existing-lessons-status", "Session expired. Please login again.", "error");
+  setStatus("lesson-status", "Session expired.", "error");
+  setStatus("items-status", "Session expired.", "error");
+}
+
+async function doLogin(){
+  try{
+    const email = qs("login-email").value.trim();
+    const password = qs("login-password").value;
+
+    const res = await login(email, password);
+    renderAuthState(res.user || null);
+    setStatus("login-status", `Logged in as ${res.user.display_name || res.user.email}`, "success");
+    await loadExistingLessons();
+  }catch(err){
+    renderAuthState(null);
+    setStatus("login-status", err.message || "Login failed", "error");
+  }
+}
+
+// async function doLogin(){
+//   try{
+//     const email = qs("login-email").value.trim();
+//     const password = qs("login-password").value;
+
+//     const res = await login(email, password);
+//     setStatus("login-status", `Logged in as ${res.user.display_name || res.user.email}`, "success");
+//     await loadExistingLessons();
+//   }catch(err){
+//     setStatus("login-status", err.message || "Login failed", "error");
+//   }
+// }
+
+async function loadExistingLessons(){
+  if(!getToken()){
+    setStatus("existing-lessons-status", "Please login first.", "error");
+    return;
+  }
+
+  try{
+    const res = await getLessons();
+    lessonsCache = Array.isArray(res.lessons) ? res.lessons : [];
+    renderExistingLessons();
+  }catch(err){
+    setStatus("existing-lessons-status", err.message || "Could not load lessons.", "error");
+  }
+}
+
+async function doCreateLesson(){
+  if(!getToken()){
+    setStatus("lesson-status", "Please login first.", "error");
+    return;
+  }
+
+  const title = qs("lesson-title").value.trim();
+  const type = qs("lesson-type").value;
+  const visibility = qs("lesson-visibility").value;
+
+  if(!title){
+    setStatus("lesson-status", "Lesson title is required.", "error");
+    return;
+  }
+
+  try{
+    const res = await createLesson({
+      title,
+      type,
+      visibility,
+      dataJson: { items: [] }
+    });
+
+    currentLessonId = res.lesson.id;
+    currentItems = cloneItems(res.lesson?.data_json?.items || []);
+    setStatus("lesson-status", `Lesson created: ${res.lesson.title}`, "success");
+    renderItemsEditor();
+    await loadExistingLessons();
+  }catch(err){
+    setStatus("lesson-status", err.message || "Create lesson failed", "error");
+  }
+}
+
+async function doSaveLessonInfo(){
+  if(!currentLessonId){
+    setStatus("lesson-status", "Select or create a lesson first.", "error");
+    return;
+  }
+
+  const title = qs("lesson-title").value.trim();
+  const type = qs("lesson-type").value;
+  const visibility = qs("lesson-visibility").value;
+
+  try{
+    await updateLesson(currentLessonId, {
+      title,
+      type,
+      visibility,
+      dataJson: { items: currentItems }
+    });
+
+    setStatus("lesson-status", "Lesson info saved.", "success");
+    await loadExistingLessons();
+  }catch(err){
+    setStatus("lesson-status", err.message || "Save failed", "error");
+  }
+}
+
+async function doSaveItems(){
+  if(!currentLessonId){
+    setStatus("items-status", "Create or select a lesson first.", "error");
+    return;
+  }
+
+  const title = qs("lesson-title").value.trim() || "Untitled";
+  const type = qs("lesson-type").value;
+  const visibility = qs("lesson-visibility").value;
+
+  try{
+    await updateLesson(currentLessonId, {
+      title,
+      type,
+      visibility,
+      dataJson: { items: currentItems }
+    });
+
+    setStatus("items-status", "Items saved to lesson.", "success");
+    await loadExistingLessons();
+  }catch(err){
+    setStatus("items-status", err.message || "Save failed", "error");
+  }
+}
+
+async function doUploadImage(index){
+  if(!currentLessonId){
+    setStatus("items-status", "Create or select a lesson first.", "error");
+    return;
+  }
+
+  const item = currentItems[index];
+  item.imageKey = toItemKey(item.word);
+
+  if(!item.word.trim()){
+    setStatus("items-status", "Enter a word before uploading image.", "error");
+    return;
+  }
+
+  const input = document.querySelector(`.item-image[data-index="${index}"]`);
+  const file = input?.files?.[0];
+
+  if(!file){
+    setStatus("items-status", "Choose an image first.", "error");
+    return;
+  }
+
+  try{
+    const uploadRes = await uploadLessonImage(
+      currentLessonId,
+      file,
+      item.imageKey
+    );
+
+    // currentItems[index].image = {
+    //   original: uploadRes.image.originalUrl,
+    //   medium: uploadRes.image.mediumUrl,
+    //   thumb: uploadRes.image.thumbUrl
+    // };
+    // currentItems[index].imageKey = uploadRes.image.item_key || item.imageKey;
+
+    currentItems[index].image = {
+  original: uploadRes.image.originalUrl,
+  medium: uploadRes.image.mediumUrl,
+  thumb: uploadRes.image.thumbUrl
+};
+currentItems[index].imageKey = uploadRes.image.item_key || item.imageKey;
+currentItems[index].imageVersion = Date.now();
+
+    setStatus("items-status", `Image uploaded for "${item.word}"`, "success");
+    renderItemsEditor();
+  }catch(err){
+    setStatus("items-status", err.message || "Image upload failed", "error");
+  }
+}
+
+function openLessonForEdit(lessonId){
+  const lesson = lessonsCache.find(l => l.id === lessonId);
+  if(!lesson) return;
+
+  currentLessonId = lesson.id;
+  fillLessonForm(lesson);
+  currentItems = cloneItems(lesson?.data_json?.items || []);
+  renderItemsEditor();
+
+  setStatus("lesson-status", `Editing: ${lesson.title}`, "success");
+  setStatus("items-status", "Lesson loaded into editor.", "success");
+}
+
+async function doDeleteLesson(){
+  if(!currentLessonId){
+    setStatus("lesson-status", "Select a lesson first.", "error");
+    return;
+  }
+
+  const yes = window.confirm("Delete this lesson? This cannot be undone.");
+  if(!yes) return;
+
+  try{
+    await deleteLesson(currentLessonId);
+
+    currentLessonId = null;
+    currentItems = [];
+    qs("lesson-title").value = "";
+    qs("lesson-type").value = "words";
+    qs("lesson-visibility").value = "private";
+    renderItemsEditor();
+
+    setStatus("lesson-status", "Lesson deleted.", "success");
+    setStatus("items-status", "No lesson selected.", "muted");
+
+    await loadExistingLessons();
+  }catch(err){
+    setStatus("lesson-status", err.message || "Delete failed", "error");
+  }
+}
+
+async function doDeleteItemImage(index){
+  if(!currentLessonId){
+    setStatus("items-status", "Select a lesson first.", "error");
+    return;
+  }
+
+  const item = currentItems[index];
+  const itemKey = item.imageKey || toItemKey(item.word);
+
+  if(!itemKey){
+    setStatus("items-status", "Word is required before deleting image.", "error");
+    return;
+  }
+
+  if(!item.image){
+    setStatus("items-status", "This item has no image.", "error");
+    return;
+  }
+
+  const yes = window.confirm(`Delete image for "${item.word}"?`);
+  if(!yes) return;
+
+  try{
+    await deleteLessonItemImage(currentLessonId, itemKey);
+
+    currentItems[index].image = null;
+currentItems[index].imageKey = itemKey;
+currentItems[index].imageVersion = "";
+
+    await updateLesson(currentLessonId, {
+      title: qs("lesson-title").value.trim() || "Untitled",
+      type: qs("lesson-type").value,
+      visibility: qs("lesson-visibility").value,
+      dataJson: { items: currentItems }
+    });
+
+    setStatus("items-status", `Image removed for "${item.word}"`, "success");
+    renderItemsEditor();
+    await loadExistingLessons();
+  }catch(err){
+    setStatus("items-status", err.message || "Delete image failed", "error");
+  }
+}
+
+qs("login-btn").addEventListener("click", doLogin);
+qs("logout-btn")?.addEventListener("click", () => {
+  logout();
+  currentLessonId = null;
+  currentItems = [];
+  lessonsCache = [];
+  renderItemsEditor();
+  renderAuthState(null);
+  setStatus("existing-lessons-status", "Logged out.", "success");
+  setStatus("lesson-status", "No lesson selected.", "muted");
+  setStatus("items-status", "No lesson selected.", "muted");
+});
+qs("refresh-lessons-btn").addEventListener("click", loadExistingLessons);
+qs("create-lesson-btn").addEventListener("click", doCreateLesson);
+qs("save-lesson-info-btn").addEventListener("click", doSaveLessonInfo);
+qs("delete-lesson-btn").addEventListener("click", doDeleteLesson);
+
+qs("add-item-btn").addEventListener("click", () => {
+  currentItems.push(makeItem());
+  renderItemsEditor();
+});
+
+qs("save-items-btn").addEventListener("click", doSaveItems);
+
+document.addEventListener("input", (e) => {
+  if(e.target.classList.contains("item-word")){
+    const index = Number(e.target.dataset.index);
+    currentItems[index].word = e.target.value;
+    currentItems[index].imageKey = toItemKey(e.target.value);
+    renderPreview();
+  }
+});
+
+document.addEventListener("click", async (e) => {
+  const uploadBtn = e.target.closest(".upload-btn");
+  if(uploadBtn){
+    const index = Number(uploadBtn.dataset.index);
+    await doUploadImage(index);
+    return;
+  }
+
+  const deleteImageBtn = e.target.closest(".delete-image-btn");
+  if(deleteImageBtn){
+    const index = Number(deleteImageBtn.dataset.index);
+    await doDeleteItemImage(index);
+    return;
+  }
+
+  const removeBtn = e.target.closest(".remove-btn");
+  if(removeBtn){
+    const index = Number(removeBtn.dataset.index);
+    currentItems.splice(index, 1);
+    renderItemsEditor();
+    return;
+  }
+
+  const editBtn = e.target.closest(".edit-lesson-btn");
+  if(editBtn){
+    openLessonForEdit(editBtn.dataset.id);
+  }
+});
+
+renderItemsEditor();
+initAuth();
+</script>
+
+  <!-- <script type="module">
+    // import {
+    //   login,
+    //   getLessons,
+    //   createLesson,
+    //   updateLesson,
+    //   uploadLessonImage,
+    //   getImageUrl,
+    //   getToken
+    // } from "./js/api.js";
+
+//     import {
+//   login,
+//   getLessons,
+//   createLesson,
+//   updateLesson,
+//   deleteLesson,
+//   uploadLessonImage,
+//   getImageUrl,
+//   getToken
+// } from "./js/api.js";
+
+import {
+  login,
+  getLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+  uploadLessonImage,
+  deleteLessonItemImage,
+  getImageUrl,
+  getToken
+} from "./js/api.js";
+
+    let currentLessonId = null;
+    let currentItems = [];
+    let lessonsCache = [];
+
+    const qs = (id) => document.getElementById(id);
+
+    function setStatus(id, text, type="muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function makeItem(word="", image=null){
+      return { word, image };
+    }
+
+    function fillLessonForm(lesson){
+      qs("lesson-title").value = lesson.title || "";
+      qs("lesson-type").value = lesson.type || "words";
+      qs("lesson-visibility").value = lesson.visibility || "private";
+    }
+
+    function cloneItems(items){
+      return (items || []).map(item => ({
+        word: item.word || "",
+        image: item.image || null
+      }));
+    }
+
+    function renderExistingLessons(){
+      const wrap = qs("existing-lessons");
+      wrap.innerHTML = "";
+
+      if(!lessonsCache.length){
+        setStatus("existing-lessons-status", "No lessons found.", "muted");
+        return;
+      }
+
+      lessonsCache.forEach((lesson) => {
+        const count = lesson?.data_json?.items?.length || 0;
+
+        const div = document.createElement("div");
+        div.className = "lesson-tile";
+        div.innerHTML = `
+          <h3>${lesson.title}</h3>
+          <div class="muted" style="margin-bottom:10px;">
+            ${lesson.type} • ${lesson.visibility} • ${count} item(s)
+          </div>
+          <button class="edit-lesson-btn" data-id="${lesson.id}">
+            Edit Lesson
+          </button>
+        `;
+        wrap.appendChild(div);
+      });
+
+      setStatus("existing-lessons-status", `${lessonsCache.length} lesson(s) loaded.`, "success");
+    }
+
+    function renderItemsEditor(){
+      const wrap = qs("items-wrap");
+      wrap.innerHTML = "";
+
+      currentItems.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "item";
+
+        div.innerHTML = `
+          <label>Word</label>
+          <input type="text" class="item-word" data-index="${index}" value="${item.word || ""}" placeholder="cat" />
+
+          <label>Image</label>
+          <input type="file" class="item-image" data-index="${index}" accept="image/png,image/jpeg,image/webp" />
+
+
+          <div class="row">
+            <button class="upload-btn secondary" data-index="${index}">Upload Image</button>
+            <button class="delete-image-btn secondary" data-index="${index}">Delete Image</button>
+          </div>
+
+          <button class="remove-btn danger" data-index="${index}">Remove Item</button>
+
+          <div style="margin-top:10px;">
+  ${
+    item.image?.thumb
+      ? `<img src="${getImageUrl(item.image.thumb)}" alt="${item.word || ""}" style="width:140px;height:140px;object-fit:contain;background:#f0f0f0;border-radius:10px;display:block;margin-bottom:8px;">`
+      : `<div class="muted" style="padding:14px 0;">No image uploaded yet.</div>`
+  }
+  <div class="muted">
+    ${item.image?.medium ? `Uploaded for "${item.word || ""}"` : ""}
+  </div>
+</div>
+        `;
+
+        wrap.appendChild(div);
+      });
+
+      renderPreview();
+    }
+
+    function renderPreview(){
+      const wrap = qs("preview-wrap");
+      wrap.innerHTML = "";
+
+      currentItems.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "preview-card";
+
+        let html = `<div><strong>${item.word || "(empty word)"}</strong></div>`;
+        if(item.image?.thumb){
+          html += `<img src="${getImageUrl(item.image.thumb)}" alt="${item.word || ""}" />`;
+        } else {
+          html += `<div class="muted" style="padding:30px 0;">No image</div>`;
+        }
+
+        card.innerHTML = html;
+        wrap.appendChild(card);
+      });
+    }
+
+    async function doLogin(){
+      const email = qs("login-email").value.trim();
+      const password = qs("login-password").value;
+
+      const res = await login(email, password);
+
+      if(res.ok){
+        setStatus("login-status", `Logged in as ${res.user.display_name || res.user.email}`, "success");
+        await loadExistingLessons();
+      } else {
+        setStatus("login-status", res.error || "Login failed", "error");
+      }
+    }
+
+    async function loadExistingLessons(){
+      if(!getToken()){
+        setStatus("existing-lessons-status", "Please login first.", "error");
+        return;
+      }
+
+      const res = await getLessons();
+
+      if(res.ok && Array.isArray(res.lessons)){
+        lessonsCache = res.lessons;
+        renderExistingLessons();
+      } else {
+        setStatus("existing-lessons-status", res.error || "Could not load lessons.", "error");
+      }
+    }
+
+    async function doCreateLesson(){
+      if(!getToken()){
+        setStatus("lesson-status", "Please login first.", "error");
+        return;
+      }
+
+      const title = qs("lesson-title").value.trim();
+      const type = qs("lesson-type").value;
+      const visibility = qs("lesson-visibility").value;
+
+      if(!title){
+        setStatus("lesson-status", "Lesson title is required.", "error");
+        return;
+      }
+
+      const res = await createLesson({
+        title,
+        type,
+        visibility,
+        dataJson: { items: [] }
+      });
+
+      if(res.ok){
+        currentLessonId = res.lesson.id;
+        currentItems = cloneItems(res.lesson?.data_json?.items || []);
+        setStatus("lesson-status", `Lesson created: ${res.lesson.title}`, "success");
+        renderItemsEditor();
+        await loadExistingLessons();
+      } else {
+        setStatus("lesson-status", res.error || "Create lesson failed", "error");
+      }
+    }
+
+    async function doSaveLessonInfo(){
+      if(!currentLessonId){
+        setStatus("lesson-status", "Select or create a lesson first.", "error");
+        return;
+      }
+
+      const title = qs("lesson-title").value.trim();
+      const type = qs("lesson-type").value;
+      const visibility = qs("lesson-visibility").value;
+
+      const res = await updateLesson(currentLessonId, {
+        title,
+        type,
+        visibility,
+        dataJson: { items: currentItems }
+      });
+
+      if(res.ok){
+        setStatus("lesson-status", "Lesson info saved.", "success");
+        await loadExistingLessons();
+      } else {
+        setStatus("lesson-status", res.error || "Save failed", "error");
+      }
+    }
+
+    async function doSaveItems(){
+      if(!currentLessonId){
+        setStatus("items-status", "Create or select a lesson first.", "error");
+        return;
+      }
+
+      const title = qs("lesson-title").value.trim() || "Untitled";
+      const type = qs("lesson-type").value;
+      const visibility = qs("lesson-visibility").value;
+
+      const res = await updateLesson(currentLessonId, {
+        title,
+        type,
+        visibility,
+        dataJson: { items: currentItems }
+      });
+
+      if(res.ok){
+        setStatus("items-status", "Items saved to lesson.", "success");
+        await loadExistingLessons();
+      } else {
+        setStatus("items-status", res.error || "Save failed", "error");
+      }
+    }
+
+    async function doUploadImage(index){
+      if(!currentLessonId){
+        setStatus("items-status", "Create or select a lesson first.", "error");
+        return;
+      }
+
+      const item = currentItems[index];
+      if(!item.word.trim()){
+        setStatus("items-status", "Enter a word before uploading image.", "error");
+        return;
+      }
+
+      const input = document.querySelector(`.item-image[data-index="${index}"]`);
+      const file = input?.files?.[0];
+
+      if(!file){
+        setStatus("items-status", "Choose an image first.", "error");
+        return;
+      }
+
+      const uploadRes = await uploadLessonImage(
+        currentLessonId,
+        file,
+        item.word.trim().toLowerCase()
+      );
+
+      if(!uploadRes.ok){
+        setStatus("items-status", uploadRes.error || "Image upload failed", "error");
+        return;
+      }
+
+      currentItems[index].image = {
+        original: uploadRes.image.originalUrl,
+        medium: uploadRes.image.mediumUrl,
+        thumb: uploadRes.image.thumbUrl
+      };
+
+      setStatus("items-status", `Image uploaded for "${item.word}"`, "success");
+      renderItemsEditor();
+    }
+
+    function openLessonForEdit(lessonId){
+      const lesson = lessonsCache.find(l => l.id === lessonId);
+      if(!lesson) return;
+
+      currentLessonId = lesson.id;
+      fillLessonForm(lesson);
+      currentItems = cloneItems(lesson?.data_json?.items || []);
+      renderItemsEditor();
+
+      setStatus("lesson-status", `Editing: ${lesson.title}`, "success");
+      setStatus("items-status", "Lesson loaded into editor.", "success");
+    }
+
+    qs("login-btn").addEventListener("click", doLogin);
+    qs("refresh-lessons-btn").addEventListener("click", loadExistingLessons);
+    qs("create-lesson-btn").addEventListener("click", doCreateLesson);
+    qs("save-lesson-info-btn").addEventListener("click", doSaveLessonInfo);
+
+    qs("add-item-btn").addEventListener("click", () => {
+      currentItems.push(makeItem());
+      renderItemsEditor();
+    });
+
+    qs("save-items-btn").addEventListener("click", doSaveItems);
+
+    document.addEventListener("input", (e) => {
+      if(e.target.classList.contains("item-word")){
+        const index = Number(e.target.dataset.index);
+        currentItems[index].word = e.target.value;
+        renderPreview();
+      }
+    });
+
+    document.addEventListener("click", async (e) => {
+      const uploadBtn = e.target.closest(".upload-btn");
+      if(uploadBtn){
+        const index = Number(uploadBtn.dataset.index);
+        await doUploadImage(index);
+        return;
+      }
+
+      const removeBtn = e.target.closest(".remove-btn");
+      if(removeBtn){
+        const index = Number(removeBtn.dataset.index);
+        currentItems.splice(index, 1);
+        renderItemsEditor();
+        return;
+      }
+
+      const editBtn = e.target.closest(".edit-lesson-btn");
+      if(editBtn){
+        openLessonForEdit(editBtn.dataset.id);
+      }
+    });
+
+    async function doDeleteLesson(){
+  if(!currentLessonId){
+    setStatus("lesson-status", "Select a lesson first.", "error");
+    return;
+  }
+
+  const yes = window.confirm("Delete this lesson? This cannot be undone.");
+  if(!yes) return;
+
+  const res = await deleteLesson(currentLessonId);
+
+  if(res.ok){
+    currentLessonId = null;
+    currentItems = [];
+    qs("lesson-title").value = "";
+    qs("lesson-type").value = "words";
+    qs("lesson-visibility").value = "private";
+    renderItemsEditor();
+
+    setStatus("lesson-status", "Lesson deleted.", "success");
+    setStatus("items-status", "No lesson selected.", "muted");
+
+    await loadExistingLessons();
+  } else {
+    setStatus("lesson-status", res.error || "Delete failed", "error");
+  }
+}
+
+qs("delete-lesson-btn").addEventListener("click", doDeleteLesson);
+
+function toItemKey(word){
+  return String(word || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function doDeleteItemImage(index){
+  if(!currentLessonId){
+    setStatus("items-status", "Select a lesson first.", "error");
+    return;
+  }
+
+  const item = currentItems[index];
+  // const itemKey = String(item.word || "").trim().toLowerCase();
+  const itemKey = toItemKey(item.word);
+  
+
+  if(!itemKey){
+    setStatus("items-status", "Word is required before deleting image.", "error");
+    return;
+  }
+
+  if(!item.image){
+    setStatus("items-status", "This item has no image.", "error");
+    return;
+  }
+
+  const yes = window.confirm(`Delete image for "${item.word}"?`);
+  if(!yes) return;
+
+  const res = await deleteLessonItemImage(currentLessonId, itemKey);
+
+  if(!res.ok){
+    setStatus("items-status", res.error || "Delete image failed", "error");
+    return;
+  }
+
+  currentItems[index].image = null;
+
+  const saveRes = await updateLesson(currentLessonId, {
+    title: qs("lesson-title").value.trim() || "Untitled",
+    type: qs("lesson-type").value,
+    visibility: qs("lesson-visibility").value,
+    dataJson: { items: currentItems }
+  });
+
+  if(!saveRes.ok){
+    setStatus("items-status", saveRes.error || "Could not save lesson after image delete", "error");
+    return;
+  }
+
+  setStatus("items-status", `Image removed for "${item.word}"`, "success");
+  renderItemsEditor();
+  await loadExistingLessons();
+}
+
+    renderItemsEditor();
+
+    if(getToken()){
+      setStatus("login-status", "Saved login detected.", "success");
+      loadExistingLessons();
+    }
+  </script> -->
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy - Lesson Creator</title>
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background:#f5f7ff;
+      margin:0;
+      padding:20px;
+      color:#222;
+    }
+    .wrap{
+      max-width:900px;
+      margin:0 auto;
+    }
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:20px;
+      box-shadow:0 8px 24px rgba(0,0,0,.08);
+    }
+    h1,h2{
+      margin-top:0;
+    }
+    input, select, button, textarea{
+      width:100%;
+      box-sizing:border-box;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      margin:8px 0 14px;
+      font-size:16px;
+    }
+    button{
+      background:#4a7dff;
+      color:#fff;
+      border:none;
+      cursor:pointer;
+      font-weight:700;
+    }
+    button.secondary{
+      background:#666;
+    }
+    button.danger{
+      background:#d64545;
+    }
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    .item{
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:14px;
+      margin-bottom:12px;
+      background:#fafafa;
+    }
+    .preview-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+      gap:14px;
+    }
+    .preview-card{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:10px;
+      text-align:center;
+    }
+    .preview-card img{
+      width:100%;
+      max-height:140px;
+      object-fit:contain;
+      border-radius:8px;
+      background:#f0f0f0;
+    }
+    .muted{
+      color:#666;
+      font-size:14px;
+    }
+    .success{
+      color:#0a8a3a;
+      font-weight:700;
+    }
+    .error{
+      color:#c62828;
+      font-weight:700;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Parent Lesson Creator</h1>
+
+    <div class="card">
+      <h2>1) Login</h2>
+      <div class="row">
+        <div>
+          <label>Email</label>
+          <input id="login-email" type="email" placeholder="parent@example.com" />
+        </div>
+        <div>
+          <label>Password</label>
+          <input id="login-password" type="password" placeholder="password" />
+        </div>
+      </div>
+      <button id="login-btn">Login</button>
+      <div id="login-status" class="muted">Not logged in.</div>
+    </div>
+
+    <div class="card">
+      <h2>2) Lesson Info</h2>
+      <label>Lesson Title</label>
+      <input id="lesson-title" type="text" placeholder="Animals" />
+
+      <div class="row">
+        <div>
+          <label>Type</label>
+          <select id="lesson-type">
+            <option value="words">Words</option>
+            <option value="reading">Reading</option>
+            <option value="math">Math</option>
+          </select>
+        </div>
+        <div>
+          <label>Visibility</label>
+          <select id="lesson-visibility">
+            <option value="private">Private</option>
+            <option value="shared">Shared</option>
+            <option value="public">Public</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="create-lesson-btn">Create Lesson</button>
+      <div id="lesson-status" class="muted">No lesson created yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>3) Add Items</h2>
+      <div id="items-wrap"></div>
+      <button id="add-item-btn" class="secondary">Add Word Item</button>
+      <button id="save-items-btn">Save Items To Lesson</button>
+      <div id="items-status" class="muted">No items saved yet.</div>
+    </div>
+
+    <div class="card">
+      <h2>4) Preview</h2>
+      <div id="preview-wrap" class="preview-grid"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      login,
+      getLessons,
+      createLesson,
+      updateLesson,
+      uploadLessonImage,
+      getImageUrl,
+      getToken
+    } from "./js/api.js";
+
+    let currentLessonId = null;
+    let currentItems = [];
+
+    const qs = (id) => document.getElementById(id);
+
+    function setStatus(id, text, type="muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function makeItem(word="", image=null){
+      return {
+        word,
+        image: image || null
+      };
+    }
+
+    function renderItemsEditor(){
+      const wrap = qs("items-wrap");
+      wrap.innerHTML = "";
+
+      currentItems.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "item";
+
+        div.innerHTML = `
+//           <label>Word</label>
+//           <input type="text" class="item-word" data-index="${index}" value="${item.word || ""}" placeholder="cat" />
+
+//           <label>Image</label>
+//           <input type="file" class="item-image" data-index="${index}" accept="image/png,image/jpeg,image/webp" />
+
+//           <button class="upload-btn secondary" data-index="${index}">Upload Image</button>
+//           <button class="remove-btn danger" data-index="${index}">Remove Item</button>
+
+//           <div class="muted">
+//             ${item.image?.medium ? `Uploaded: ${item.image.medium}` : "No image uploaded yet."}
+//           </div>
+//         `;
+
+//         wrap.appendChild(div);
+//       });
+
+//       renderPreview();
+//     }
+
+//     function renderPreview(){
+//       const wrap = qs("preview-wrap");
+//       wrap.innerHTML = "";
+
+//       currentItems.forEach((item) => {
+//         const card = document.createElement("div");
+//         card.className = "preview-card";
+
+//         let html = `<div><strong>${item.word || "(empty word)"}</strong></div>`;
+//         if(item.image?.thumb){
+//           html += `<img src="${getImageUrl(item.image.thumb)}" alt="${item.word || ""}" />`;
+//         } else {
+//           html += `<div class="muted" style="padding:30px 0;">No image</div>`;
+//         }
+
+//         card.innerHTML = html;
+//         wrap.appendChild(card);
+//       });
+//     }
+
+//     async function doLogin(){
+//       const email = qs("login-email").value.trim();
+//       const password = qs("login-password").value;
+
+//       const res = await login(email, password);
+
+//       if(res.ok){
+//         setStatus("login-status", `Logged in as ${res.user.display_name || res.user.email}`, "success");
+//       } else {
+//         setStatus("login-status", res.error || "Login failed", "error");
+//       }
+//     }
+
+//     async function doCreateLesson(){
+//       if(!getToken()){
+//         setStatus("lesson-status", "Please login first.", "error");
+//         return;
+//       }
+
+//       const title = qs("lesson-title").value.trim();
+//       const type = qs("lesson-type").value;
+//       const visibility = qs("lesson-visibility").value;
+
+//       if(!title){
+//         setStatus("lesson-status", "Lesson title is required.", "error");
+//         return;
+//       }
+
+//       const res = await createLesson({
+//         title,
+//         type,
+//         visibility,
+//         dataJson: { items: [] }
+//       });
+
+//       if(res.ok){
+//         currentLessonId = res.lesson.id;
+//         setStatus("lesson-status", `Lesson created: ${res.lesson.title} (${currentLessonId})`, "success");
+//       } else {
+//         setStatus("lesson-status", res.error || "Create lesson failed", "error");
+//       }
+//     }
+
+//     async function doSaveItems(){
+//       if(!currentLessonId){
+//         setStatus("items-status", "Create lesson first.", "error");
+//         return;
+//       }
+
+//       const title = qs("lesson-title").value.trim() || "Untitled";
+//       const type = qs("lesson-type").value;
+//       const visibility = qs("lesson-visibility").value;
+
+//       const res = await updateLesson(currentLessonId, {
+//         title,
+//         type,
+//         visibility,
+//         dataJson: { items: currentItems }
+//       });
+
+//       if(res.ok){
+//         setStatus("items-status", "Items saved to lesson.", "success");
+//       } else {
+//         setStatus("items-status", res.error || "Save failed", "error");
+//       }
+//     }
+
+//     async function doUploadImage(index){
+//       if(!currentLessonId){
+//         setStatus("items-status", "Create lesson first.", "error");
+//         return;
+//       }
+
+//       const item = currentItems[index];
+//       if(!item.word.trim()){
+//         setStatus("items-status", "Enter a word before uploading image.", "error");
+//         return;
+//       }
+
+//       const input = document.querySelector(`.item-image[data-index="${index}"]`);
+//       const file = input?.files?.[0];
+
+//       if(!file){
+//         setStatus("items-status", "Choose an image first.", "error");
+//         return;
+//       }
+
+//       const uploadRes = await uploadLessonImage(currentLessonId, file, item.word.trim().toLowerCase());
+
+//       if(!uploadRes.ok){
+//         setStatus("items-status", uploadRes.error || "Image upload failed", "error");
+//         return;
+//       }
+
+//       currentItems[index].image = {
+//         original: uploadRes.image.originalUrl,
+//         medium: uploadRes.image.mediumUrl,
+//         thumb: uploadRes.image.thumbUrl
+//       };
+
+//       setStatus("items-status", `Image uploaded for "${item.word}"`, "success");
+//       renderItemsEditor();
+//     }
+
+//     qs("login-btn").addEventListener("click", doLogin);
+
+//     qs("create-lesson-btn").addEventListener("click", doCreateLesson);
+
+//     qs("add-item-btn").addEventListener("click", () => {
+//       currentItems.push(makeItem());
+//       renderItemsEditor();
+//     });
+
+//     qs("save-items-btn").addEventListener("click", doSaveItems);
+
+//     document.addEventListener("input", (e) => {
+//       if(e.target.classList.contains("item-word")){
+//         const index = Number(e.target.dataset.index);
+//         currentItems[index].word = e.target.value;
+//         renderPreview();
+//       }
+//     });
+
+//     document.addEventListener("click", async (e) => {
+//       const uploadBtn = e.target.closest(".upload-btn");
+//       if(uploadBtn){
+//         const index = Number(uploadBtn.dataset.index);
+//         await doUploadImage(index);
+//         return;
+//       }
+
+//       const removeBtn = e.target.closest(".remove-btn");
+//       if(removeBtn){
+//         const index = Number(removeBtn.dataset.index);
+//         currentItems.splice(index, 1);
+//         renderItemsEditor();
+//       }
+//     });
+
+//     renderItemsEditor();
+//   </script>
+//   <script>
+//   function go(page){
+//     window.location.href = page;
+//   }
+// </script>
+// </body>
+// </html> -->

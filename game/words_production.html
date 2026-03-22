@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Adventure | Athena & Aria Studio</title>
+  
+
+  <link rel="stylesheet" href="./legacy_merged.css" />
+</head>
+<body>
+
+  
+  <!-- HUD -->
+  <div id="sb-hud"></div>
+
+  <!-- Toast -->
+  <div id="sb-toast"></div>
+
+  <!-- BIG REWARD FX (stars / streak) -->
+  <div id="sb-reward" class="sb-reward hidden" aria-hidden="true">
+    <div class="sb-reward-burst" id="sb-reward-burst"></div>
+    <div class="sb-reward-card" role="status" aria-live="polite">
+      <div class="sb-reward-emoji" id="sb-reward-emoji">⭐</div>
+      <div class="sb-reward-text" id="sb-reward-text">+1 STAR!</div>
+    </div>
+  </div>
+
+  <!-- NEW: Global VS status (appears in all games) -->
+  <div id="mp-game-status" style="position:fixed; top:70px; left:10px; right:10px; background:rgba(0,0,0,.75); color:#fff; padding:8px 12px; border-radius:12px; font-weight:900; text-align:center; z-index:9998; display:none;">
+    VS Mode • First to finish wins the round!
+  </div>
+
+  <!-- MENU -->
+  <div id="menu-page" class="card">
+    <h1>👧 Study Buddy Games</h1>
+
+    <div class="row" style="margin-bottom:12px;">
+      <button onclick="resetAllProgress()" style="background:#e74c3c;">🔄 Reset All Stars</button>
+      <button onclick="openNewLesson()" style="background:var(--secondary);">➕ Create New Lesson</button>
+      <button onclick="openStorageManager()" style="background:#6c5ce7;">🗄️ Storage Manager</button>
+</div>
+
+    <div id="lesson-list"></div>
+  </div>
+
+  <!-- STORAGE MANAGER -->
+  <div id="storage-page" class="card hidden">
+    <h1>🗄️ Storage Manager</h1>
+    <p style="color:#666; margin-top:-6px;">
+      Offline images are stored in IndexedDB (mobile-safe). You can clean unused images here.
+    </p>
+
+    <div class="row">
+      <button onclick="refreshStorageManager()" style="background:#00b894;">🔄 Refresh</button>
+      <button onclick="deleteUnusedImages()" style="background:#e17055;">🧹 Delete Unused</button>
+      <button onclick="clearAllImages()" style="background:#d63031;">🗑️ Clear All Images</button>
+      <button onclick="showPage('menu-page')" style="background:#636e72;">⬅ Back</button>
+    </div>
+
+    <div id="storage-summary" style="margin:12px 0; font-weight:900;"></div>
+    <div id="storage-list" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;"></div>
+  </div>
+
+  <!-- CREATOR -->
+  <div id="creator-page" class="card hidden">
+    <h2 id="creator-title">New Lesson</h2>
+    <input id="lesson-title-input" type="text" placeholder="Lesson Title (e.g. Animals)"
+           style="width:85%; margin-bottom:14px;" />
+
+    <div id="items-input-container"></div>
+
+    <div class="row" style="margin-top:10px;">
+      <button onclick="addWordRow()" style="background:var(--secondary);">+ Add More Word</button>
+    </div>
+
+    <div class="row" style="margin-top:16px;">
+      <button onclick="saveLesson()" style="background:#2ecc71;">💾 Save</button>
+      <button onclick="showPage('menu-page')" style="background:#95a5a6;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- LESSON HUB PAGE (replaces modal picker) -->
+<div id="lesson-page" class="card hidden">
+  <div class="row" style="justify-content:space-between;">
+    <!-- <button onclick="showPage('menu-page')" style="background:#636e72;">⬅ Menu</button> -->
+    <div id="lesson-page-title" style="font-weight:900; font-size:18px;"></div>
+  </div>
+
+  <div id="lesson-page-badges" class="row" style="justify-content:center; margin:10px 0;"></div>
+
+  <div id="global-multiplayer-card" class="card" style="background:var(--kid-soft); margin:12px 0;">
+    <div style="font-weight:900; margin-bottom:8px;">👥 Multiplayer Setup</div>
+    <div class="row" style="gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;">
+      <input id="global-room-id" type="text" placeholder="Room code" value="class-1" style="max-width:180px;" />
+      <select id="global-role-id" style="max-width:160px;">
+        <option value="player">Player</option>
+        <option value="host">Host</option>
+      </select>
+      <select id="global-host-plays-id" style="max-width:160px;">
+      <option value="yes">🎮 Host Plays</option>
+      <option value="no">🧑‍🏫 Host Spectates</option>
+    </select>
+      <select id="global-team-id" style="max-width:160px;">
+        <option value="red">🔴 Red Team</option>
+        <option value="blue">🔵 Blue Team</option>
+      </select>
+      <button id="global-connect-btn" onclick="globalConnect()" style="background:#6c5ce7;">🔌 Connect</button>
+      <button id="global-disconnect-btn" onclick="globalDisconnect()" style="background:#636e72;">⛔ Disconnect</button>
+    </div>
+    <div id="global-connect-status" style="margin-top:8px; font-weight:900; text-align:center; opacity:.85;">Offline. Multiplayer currently works on Warrior (Pro) first.</div>
+  </div>
+
+  <!-- <div class="row">
+  <div>
+    <label>Your Name</label>
+    <input id="global-player-name-id" placeholder="Enter player name" maxlength="24" />
+  </div>
+
+  <div>
+    <label>Max Rounds</label>
+    <select id="global-max-rounds-id">
+      <option value="3">3</option>
+      <option value="5" selected>5</option>
+      <option value="7">7</option>
+      <option value="10">10</option>
+      <option value="0">Unlimited</option>
+    </select>
+  </div>
+</div>
+
+<div class="row">
+  <div>
+    <label>Warrior Round Limit</label>
+    <select id="global-warrior-round-limit-id">
+      <option value="3">3</option>
+      <option value="5" selected>5</option>
+      <option value="7">7</option>
+      <option value="10">10</option>
+      <option value="0">Unlimited</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Allowed Modes</label>
+    <div id="global-allowed-modes-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <label><input type="checkbox" class="sb-mode-opt" value="smash" checked> Smash</label>
+      <label><input type="checkbox" class="sb-mode-opt" value="spelling" checked> Spell</label>
+      <label><input type="checkbox" class="sb-mode-opt" value="typespell" checked> Type Spell</label>
+      <label><input type="checkbox" class="sb-mode-opt" value="memory" checked> Memory</label>
+      <label><input type="checkbox" class="sb-mode-opt" value="repeatpro" checked> Repeat Pro</label>
+      <label><input type="checkbox" class="sb-mode-opt" value="warrior" checked> Warrior</label>
+    </div>
+  </div>
+</div>
+
+<div id="sb-session-summary" class="hidden" style="margin-top:14px;padding:12px;border-radius:12px;background:#fff8e7;border:1px solid #f3d37a;"></div>
+
+<div id="sb-leaderboard-panel" class="hidden" style="margin-top:14px;padding:12px;border-radius:12px;background:#eef6ff;border:1px solid #b8d7ff;">
+  <div style="font-weight:800;margin-bottom:8px;">🏆 Session Leaderboard</div>
+  <div id="sb-leaderboard-body"></div>
+</div> -->
+
+  <!-- <div class="row" style="gap:10px; justify-content:center; flex-wrap:wrap; margin-top:10px;">
+      <button onclick="sbLaunchGame('study')" style="background:#3498db;">📖 Study</button>
+      <button onclick="sbLaunchGame('smash')" style="background:#2ecc71;">🔨 Smash</button>
+      <button onclick="sbLaunchGame('spelling')" style="background:#f1c40f; color:#333;">🔤 Spell</button>
+      <button onclick="sbLaunchGame('type-spell')" style="background:#ff9f43; color:#fff;">⌨️ Type Spell</button>
+      <button onclick="sbLaunchGame('scramble')" style="background:#6c5ce7;">🧩 Scramble</button>
+      <button onclick="sbLaunchGame('memory')" style="background:#9b59b6;">🧠 Memory</button>
+      <button onclick="sbLaunchGame('repeat')" style="background:#1abc9c;">🗣️ Repeat</button>
+      <button onclick="sbLaunchGame('runner')" style="background:#8e44ad;">🏃 Runner (Pro)</button>
+      <button onclick="sbLaunchGame('warrior')" style="background:#8e44ad;">⚔️ Warrior (Pro)</button>
+    </div> -->
+
+  <div class="row" style="gap:10px; justify-content:center; flex-wrap:wrap; margin-top:10px;">
+    <button id="btn-study"  style="background:#3498db;">📖 Study</button>
+    <button id="btn-smash"  style="background:#2ecc71;">🔨 Smash</button>
+    <button id="btn-spell"  style="background:#f1c40f; color:#333;">🔤 Spell</button>
+    <button id="btn-type-spell" style="background:#ff9f43; color:#fff;">⌨️ Type Spell</button>
+    <button id="btn-scramble" style="background:#6c5ce7;">🧩 Scramble</button>
+    <button id="btn-memory" style="background:#9b59b6;">🧠 Memory</button>
+    <button id="btn-repeat" style="background:#1abc9c;">🗣️ Repeat</button>
+    <button id="btn-repeat-pro" style="background:#16a085;">🎤 Repeat Pro</button>
+    <!-- <button id="btn-sentence" style="background:#2ecc71;">🧠 Sentence Repeat</button>
+    <button id="btn-daily" style="background:#f39c12;">💎 Daily Speaking</button> -->
+
+    <!-- <button id="btn-runner" style="background:#8e44ad;">🏃 Runner (Pro)</button> -->
+    <button id="btn-warrior" style="background:#8e44ad;">⚔️ Warrior (Pro)</button>
+  </div>
+<!-- <div style="margin-top:14px; opacity:.85; font-weight:800;" id="tip">
+    Tip: Study first to unlock games.
+  </div> -->
+  <div id="sb-game-locks" data-parent-only="1" style="max-width:920px; margin:10px auto 0; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.75);">
+  </div>
+  <div style="margin-top:12px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="sb-x" data-parent-only="1" onclick="sbEditSelected()" style="background:#3498db;color:#fff">Edit</button>
+        <button class="sb-x" data-parent-only="1" onclick="sbDeleteSelected()" style="background:#ff4757;color:#fff">Delete</button>
+      </div>
+
+  <div style="flex: 1;">
+      <!-- <button onclick="showPage('lesson-page')" style="background:#dd2626;">⬅ Lesson</button> -->
+      <button onclick="showPage('menu-page')" style="background:#636e72;">Menu</button>
+    </div>
+</div>
+
+
+  <!-- STUDY PAGE -->
+  <div id="study-page" class="hidden">
+    <div class="card">
+      <!-- <button onclick="showPage('menu-page')" style="background:#636e72;">⬅ Menu</button> -->
+      <h2>Tap Each Word to Unlock Games!</h2>
+
+      <div id="study-grid"
+           style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:12px; padding:10px;">
+      </div>
+
+      <div id="unlock-message" class="hidden"
+           style="margin-top:16px; color:#2ecc71; font-weight:900; font-size:1.2rem;">
+        🌟 You did it! Games are now UNLOCKED! 🌟
+      </div>
+    </div>
+    <div style="flex: 1;">
+      <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+      <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <button onclick="showPage('menu-page')" style="background:#636e72;">Menu</button>
+    </div>
+  </div>
+
+  <!-- GAME PAGE -->
+  <div id="game-page" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <!-- <button onclick="showPage('menu-page')" style="background:#636e72;">⬅ Menu</button> -->
+
+        <div class="row" style="gap:8px;">
+          <strong>Display:</strong>
+          <select id="global-display-style" onchange="nextRound(true)">
+            <option value="text">ABC Text</option>
+            <option value="image">🖼️ Pictures</option>
+            <option value="both" selected>✨ Both</option>
+          </select>
+
+          <label style="font-weight:900; cursor:pointer; margin-left:10px;">
+            <input type="checkbox" id="repeat-toggle" />
+            Repeat Words
+          </label>
+        </div>
+      </div>
+
+      <div id="character">👧</div>
+
+      <div id="spelling-preview" class="hidden">
+        <div id="spelling-hint"></div>
+        <div id="spelling-letters"></div>
+      </div>
+
+      <div id="word-arena"></div>
+
+      <div style="margin-top:10px;">
+        <button onclick="repeatTarget()" style="background:#9b59b6;">🔊 Hear Again</button>
+      </div>
+    </div>
+    <div style="flex: 1;">
+      <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+      <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <button onclick="showPage('menu-page')" style="background:#636e72;">Menu</button>
+    </div>
+  </div>
+
+  <!-- MEMORY PAGE -->
+  <div id="memory-page" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <!-- <button onclick="showPage('menu-page')" style="background:#636e72;">⬅ Menu</button> -->
+        <div style="font-weight:900;">
+          Moves: <span id="move-count">0</span> | Matches: <span id="match-count">0</span>
+        </div>
+      </div>
+
+      <div id="memory-grid"></div>
+    </div>
+    <div style="flex: 1;">
+      <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+      <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <button onclick="showPage('menu-page')" style="background:#636e72;">Menu</button>
+    </div>
+    <!-- <button onclick="showPage('menu-page')" style="background:#636e72;">⬅ Menu</button> -->
+  </div>
+
+  <div id="repeat-page" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between;">
+      <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+      <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <div style="font-weight:1000;">🗣️ Repeat Mode</div>
+    </div>
+
+    <div id="repeat-prompt" style="font-size:2rem; margin:20px;"></div>
+
+    <button id="repeat-mic-btn" style="background:#3498db; font-size:1.6rem; padding:14px 28px;">
+      🎤 Tap to Speak
+    </button>
+
+    <div id="repeat-feedback" style="margin-top:16px; font-weight:1000;"></div>
+  </div>
+</div>
+
+
+<div id="type-spell-page" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <div style="font-weight:1000;">⌨️ Type Spell</div>
+      <button onclick="showPage('menu-page')" style="background:#636e72;">Menu</button>
+    </div>
+    <div id="type-spell-prompt" style="font-size:1.7rem; margin:16px 0; font-weight:900;"></div>
+    <div id="type-spell-image-wrap" style="margin:8px 0 14px;"></div>
+    <div id="type-spell-blanks" style="font-size:2rem; letter-spacing:6px; font-weight:1000; margin:12px 0;"></div>
+    <input id="type-spell-input" type="text" placeholder="Type the word..." style="width:min(92%,420px); text-align:center; font-size:1.2rem;" />
+    <!-- <div class="row" style="margin-top:14px;">
+      <button id="type-spell-check-btn" style="background:#2ecc71;">✅ Check</button>
+      <button id="type-spell-clear-btn" style="background:#95a5a6;">🧹 Clear</button>
+      <button id="type-spell-hear-btn" style="background:#9b59b6;">🔊 Hear Again</button>
+    </div> -->
+
+    <div class="row" style="margin-top:14px;">
+      <button id="type-spell-backspace-btn" style="background:#e67e22;">⌫ Backspace</button>
+      <button id="type-spell-clear-btn" style="background:#95a5a6;">🧹 Clear</button>
+      <button id="type-spell-hear-btn" style="background:#9b59b6;">🔊 Hear Again</button>
+    </div>
+    <div id="type-spell-feedback" style="margin-top:14px; font-weight:1000;"></div>
+  </div>
+</div>
+
+<div id="scramble-word-page" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <div style="font-weight:1000;">🧩 Word Scramble</div>
+      <button onclick="showPage('menu-page')" style="background:#636e72;">Menu</button>
+    </div>
+    <div id="scramble-word-prompt" style="font-size:1.7rem; margin:16px 0; font-weight:900;"></div>
+    <div id="scramble-word-image-wrap" style="margin:8px 0 14px;"></div>
+    <div id="scramble-word-answer" class="sb-scramble-answer"></div>
+    <div id="scramble-word-bank" class="sb-scramble-bank"></div>
+    <div class="row" style="margin-top:14px;">
+      <button id="scramble-word-check-btn" style="background:#2ecc71;">✅ Check</button>
+      <button id="scramble-word-clear-btn" style="background:#95a5a6;">🧹 Clear</button>
+      <button id="scramble-word-hear-btn" style="background:#9b59b6;">🔊 Hear Again</button>
+    </div>
+    <div id="scramble-word-feedback" style="margin-top:14px; font-weight:1000;"></div>
+  </div>
+</div>
+
+<!-- <div id="sentence-page" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between; align-items:center;"> -->
+      <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+       <!--<button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <div style="font-weight:1000;">🧠 Sentence Repeat</div>
+    </div>
+
+    <div id="sentence-instructions" style="margin:10px 0; opacity:.85;">
+      Tap the mic, repeat the whole sentence. One tap per sentence.
+    </div>
+
+    <div id="sentence-prompt" style="font-size:1.7rem; margin:16px 0; font-weight:900;"></div>
+
+    <button id="sentence-mic-btn" class="mic-btn" style="font-size:1.2rem; padding:14px 22px;">
+      🎤 Tap to Speak
+    </button>
+
+    <div id="sentence-feedback" style="margin-top:12px; font-weight:1000;"></div>
+  </div>
+</div> -->
+
+<!-- <div id="daily-page" class="hidden">
+  <div class="card">
+    <div class="row" style="justify-content:space-between; align-items:center;"> -->
+      <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+      <!-- <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <div style="font-weight:1000;">💎 Daily Speaking</div>
+    </div>
+
+    <div id="daily-status" style="margin:10px 0; font-weight:900;"></div>
+
+    <div id="daily-prompt" style="font-size:1.7rem; margin:16px 0; font-weight:900;"></div>
+
+    <button id="daily-mic-btn" class="mic-btn" style="font-size:1.2rem; padding:14px 22px;">
+      🎤 Tap to Speak
+    </button>
+
+    <div style="margin-top:10px;">
+      <button id="daily-hear-btn" onclick="dailyHearAgain()" style="background:#9b59b6;">
+        🔊 Hear Again
+      </button>
+    </div>
+
+    <div id="daily-feedback" style="margin-top:12px; font-weight:1000;"></div>
+    <div id="daily-counter" style="margin-top:10px; opacity:.85;"></div>
+  </div>
+</div> -->
+
+
+  
+  <!-- RUNNER PAGE (PRO) -->
+  <div id="runner-page" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+        <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+        <div id="runner-hud" style="font-weight:1000;"></div>
+        <button onclick="runnerTogglePause()" style="background:#636e72;">⏸</button>
+      </div>
+
+      <canvas id="runner-canvas" width="900" height="520"
+              style="width:100%; max-width:900px; border-radius:16px; display:block; margin:10px auto; background:#0b1020;"></canvas>
+
+      <div id="runner-prompt" style="text-align:center; font-weight:1000; font-size:18px; margin-top:8px;"></div>
+      <div id="runner-choices" class="row" style="gap:10px; justify-content:center; flex-wrap:wrap; padding:12px;"></div>
+
+      <div style="margin-top:8px;">
+        <button onclick="repeatRunnerPrompt()" style="background:#9b59b6;">🔊 Hear Again</button>
+      </div>
+    </div>
+
+    <div style="flex: 1;">
+      <!-- <button onclick="openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+      <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+      <button onclick="showPage('menu-page')" style="background:#636e72;">Menu</button>
+    </div>
+  </div>
+
+  <!-- <div id="mp-room-modal" class="hidden">
+  <div class="card">
+    <div style="font-weight:1000; font-size:22px;">👥 Multiplayer Room</div>
+
+    <div id="mp-room-modal-status" style="margin-top:10px; font-weight:900;"></div>
+    <div id="mp-room-modal-code" style="margin-top:8px;"></div>
+    <div id="mp-room-modal-role" style="margin-top:8px;"></div>
+    <div id="mp-room-modal-team" style="margin-top:8px;"></div>
+    <div id="mp-room-modal-character" style="margin-top:8px;"></div>
+
+    <div style="margin-top:12px; font-weight:900;">Players Joined:</div>
+    <div id="mp-room-modal-roster" style="margin-top:8px;"></div>
+
+    <div style="margin-top:14px;" class="row">
+      <button id="mp-room-start-btn" onclick="mpHostStartSession()" style="background:#6c5ce7;">▶ Start Session</button>
+      <button onclick="mpCloseRoomModal()" style="background:#636e72;">Close</button>
+      <button onclick="globalDisconnect()" style="background:#d63031;">Leave Room</button>
+    </div>
+  </div>
+</div> -->
+
+
+
+  <!-- WORD WARRIOR PAGE (PRO) -->
+  <div id="warrior-page" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+
+        <!-- <button onclick="warriorStop(); openLessonHub(currentLessonIndex)" style="background:#dd2626;">⬅ Lesson</button> -->
+        <button onclick="sbBackToLesson()" style="background:#dd2626;">⬅ Lesson</button>
+        <div style="font-weight:1000;">⚔️ Word Warrior</div>
+        <button onclick="warriorTogglePause()" style="background:#636e72;">⏸</button>
+      </div>
+
+      <canvas id="warrior-canvas" width="900" height="520"
+              style="width:100%; max-width:900px; border-radius:16px; display:block; margin:10px auto; background:#0b1020;"></canvas>
+
+      <div class="row" style="justify-content:center; gap:10px; flex-wrap:wrap; padding-top:10px;">
+        <button onclick="warriorStart('boxes')" style="background:#8e44ad;">📦 Word Boxes (Pro)</button>
+        <button onclick="warriorStart('spell')" style="background:#8e44ad;">🗡️ Sword Spelling (Pro)</button>
+        <button onclick="repeatWarriorPrompt()" style="background:#9b59b6;">🔊 Hear Again</button>
+      </div>
+      <button id="warrior-host-start-btn" onclick="warriorHostStartRound()" style="background:#6c5ce7;">
+        ▶ Start Round
+      </button>
+
+      <div id="warrior-hud" style="margin-top:10px; font-weight:1000;"></div>
+      <div id="warrior-net-status" style="margin-top:8px; font-weight:900; text-align:center; opacity:.9;"></div>
+    </div>
+  </div>
+
+
+<!-- HELP OVERLAY -->
+  <div id="help-overlay" class="hidden" onclick="toggleHelp(false)">
+    <div class="help-content" onclick="event.stopPropagation()">
+      <h3>🖼️ How to get Image Links</h3>
+      <ul>
+        <li><em>Windows:</em> Right-click image → “Copy image address”</li>
+        <li><em>Mac:</em> Control-click → “Copy image address”</li>
+        <li><strong>Best on mobile:</strong> use <b>Offline (Upload)</b> mode.</li>
+      </ul>
+      <button onclick="toggleHelp(false)" style="width:100%;">Got it!</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS OVERLAY -->
+  <div id="success-overlay" class="hidden">
+    <h1 id="success-msg">GREAT JOB!</h1>
+    <div id="success-media" style="font-size:90px; margin:10px;"></div>
+    <p style="font-weight:900;">Tap to continue!</p>
+  </div>
+
+
+  <!-- MODE PICKER MODAL -->
+  <div id="sb-mode-modal" class="sb-modal hidden" aria-hidden="true" onclick="sbCloseModePicker()">
+    <div class="sb-modal-card" onclick="event.stopPropagation()">
+      <div class="sb-modal-hd">
+        <div>
+          <div class="sb-modal-title" id="sb-modal-title">Choose a game</div>
+          <div class="sb-modal-sub" id="sb-modal-sub">Pick a mode</div>
+        </div>
+        <button class="sb-x" onclick="sbCloseModePicker()">✕</button>
+      </div>
+
+      <div class="sb-mode-grid">
+        <button class="sb-mode-btn" id="sb-btn-study" style="background:#3498db" onclick="sbLaunch('study')">📖 Study First</button>
+        <button class="sb-mode-btn" id="sb-btn-smash" style="background:#2ecc71" onclick="sbLaunch('smash')">🔨 Smash</button>
+        <button class="sb-mode-btn" id="sb-btn-spell" style="background:#f1c40f" onclick="sbLaunch('spelling')">🔤 Spell</button>
+        <button class="sb-mode-btn" id="sb-btn-memory" style="background:#f39c12" onclick="sbLaunch('memory')">🧠 Memory</button>
+      </div>
+</div>
+  </div>
+
+  <!-- PRO UPGRADE MODAL (outside pages so it never gets hidden) -->
+  <div id="sb-pro-overlay" class="hidden" aria-hidden="true" onclick="sbProClose()">
+    <div class="sb-pro-card" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+      <div class="sb-pro-title">Unlock Pro ⭐</div>
+      <div class="sb-pro-sub">Runner mode + printables. No account. No tracking.</div>
+
+      <div class="sb-pro-list">
+        <div>✅ Runner Mode (Athena & Aria)</div>
+        <div>✅ Printable worksheets (Match / Flashcards / Spelling)</div>
+        <div>✅ Remove ads (when you add them)</div>
+      </div>
+
+      <div class="sb-pro-actions">
+        <button class="sb-btn sb-btn-primary" onclick="sbStartUpgrade()">Upgrade ($20/year)</button>
+        <button class="sb-btn sb-btn-ghost" onclick="sbProClose()">Not now</button>
+      </div>
+
+      <div class="sb-pro-code">
+        Already have a code?
+        <div style="display:flex; gap:8px; margin-top:8px; justify-content:center; flex-wrap:wrap;">
+          <input id="sb-pro-code-input" type="text" placeholder="Enter unlock code" />
+          <button class="sb-btn sb-btn-ghost" onclick="sbRedeemCode()">Unlock</button>
+        </div>
+        <div class="sb-pro-note">Tip: for testing, any code with 8+ characters unlocks Pro.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mp-room-modal" class="hidden" style="
+  position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,.55);
+  display:flex; align-items:center; justify-content:center;
+  padding:16px;
+">
+  <div class="card" style="max-width:720px; width:100%; background:var(--kid-soft);">
+    <div style="font-weight:1000; font-size:24px; text-align:center;">👥 Multiplayer Room</div>
+
+    <div id="mp-room-modal-status" style="margin-top:10px; font-weight:900; text-align:center;">
+      Waiting...
+    </div>
+
+    <div class="row" style="justify-content:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
+      <div id="mp-room-modal-code" class="sb-badge">Room: class-1</div>
+      <div id="mp-room-modal-role" class="sb-badge">Role: PLAYER</div>
+      <div id="mp-room-modal-team" class="sb-badge">Team: RED</div>
+      <div id="mp-room-modal-character" class="sb-badge">Character: Athena</div>
+    </div>
+
+    <div style="margin-top:14px; font-weight:1000; text-align:center;">Players Joined</div>
+    <div id="mp-room-modal-roster" style="
+      margin-top:10px;
+      min-height:70px;
+      padding:10px;
+      border-radius:14px;
+      background:rgba(255,255,255,.65);
+      text-align:center;
+      font-weight:900;
+    ">
+      No players yet.
+    </div>
+
+    <div class="row" style="justify-content:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
+      <button id="mp-room-start-btn" onclick="mpHostStartSession()" style="background:#6c5ce7;">
+        ▶ Start Session
+      </button>
+      <button onclick="mpCloseRoomModal()" style="background:#636e72;">
+        Close
+      </button>
+      <button onclick="globalDisconnect()" style="background:#d63031;">
+        Leave Room
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+  <script type="module" src="legacy4.js"></script>
+  <!-- <script type="module" src="legacy3_merged.js"></script> -->
+</body>
+</html>

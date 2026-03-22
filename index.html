@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy</title>
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      margin:0;
+      background:#f4f7ff;
+      color:#222;
+    }
+
+    .wrap{
+      max-width:900px;
+      margin:0 auto;
+      padding:24px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.08);
+      margin-bottom:20px;
+    }
+
+    h1,h2{
+      margin-top:0;
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    input{
+      padding:12px;
+      border:1px solid #ccc;
+      border-radius:10px;
+      min-width:220px;
+    }
+
+    button{
+      padding:12px 18px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      background:#3f6df6;
+      color:#fff;
+      font-weight:600;
+    }
+
+    button.secondary{
+      background:#666;
+    }
+
+    button.danger{
+      background:#d33;
+    }
+
+    .muted{
+      color:#666;
+    }
+
+    .success{
+      color:#0a8a35;
+      font-weight:600;
+    }
+
+    .error{
+      color:#c62828;
+      font-weight:600;
+    }
+
+    .menu{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+      margin-top:16px;
+    }
+
+    .menu a{
+      display:block;
+      text-decoration:none;
+      background:#eef3ff;
+      padding:18px;
+      border-radius:14px;
+      color:#1d3f9e;
+      font-weight:700;
+      text-align:center;
+    }
+
+    .hidden{
+      display:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Study Buddy</h1>
+      <div id="auth-state" class="muted">Checking login…</div>
+    </div>
+
+    <div class="card" id="auth-card">
+      <h2>Login / Register</h2>
+
+      <div class="row" style="margin-bottom:12px;">
+        <input id="auth-email" type="email" placeholder="Email" />
+        <input id="auth-password" type="password" placeholder="Password" />
+        <input id="auth-display-name" type="text" placeholder="Display name (for register)" />
+      </div>
+
+      <div class="row">
+        <button id="login-btn" type="button">Login</button>
+        <button id="register-btn" type="button">Register</button>
+        <button id="logout-btn" type="button" class="danger hidden">Logout</button>
+      </div>
+
+      <div id="auth-status" class="muted" style="margin-top:12px;">Not logged in.</div>
+    </div>
+
+    <div class="card">
+      <h2>Games</h2>
+      <div class="menu">
+        <a href="./game/words_production.html">Words Game</a>
+        <a href="./game/reading.html">Reading Game</a>
+        <a href="./game/math.html">Math Game</a>
+        <a href="./game/creator.html">Lesson Creator</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      login,
+      register,
+      bootAuth,
+      logout,
+      getSavedUser,
+      setSessionExpiredHandler
+    } from "./game/js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    function setStatus(id, text, type = "muted"){
+      const el = qs(id);
+      el.className = type;
+      el.textContent = text;
+    }
+
+    function renderAuth(user = null){
+      const logoutBtn = qs("logout-btn");
+
+      if(user){
+        setStatus("auth-state", `Logged in as ${user.display_name || user.email}`, "success");
+        setStatus("auth-status", `Welcome back, ${user.display_name || user.email}`, "success");
+        logoutBtn.classList.remove("hidden");
+      }else{
+        setStatus("auth-state", "Not logged in.", "muted");
+        setStatus("auth-status", "Please login or register.", "muted");
+        logoutBtn.classList.add("hidden");
+      }
+    }
+
+    async function doLogin(){
+      try{
+        const email = qs("auth-email").value.trim();
+        const password = qs("auth-password").value;
+        const res = await login(email, password);
+        renderAuth(res.user || null);
+      }catch(err){
+        setStatus("auth-status", err.message || "Login failed", "error");
+      }
+    }
+
+    async function doRegister(){
+      try{
+        const email = qs("auth-email").value.trim();
+        const password = qs("auth-password").value;
+        const displayName = qs("auth-display-name").value.trim();
+        const res = await register(email, password, displayName);
+        renderAuth(res.user || null);
+      }catch(err){
+        setStatus("auth-status", err.message || "Register failed", "error");
+      }
+    }
+
+    async function initAuth(){
+      const savedUser = getSavedUser();
+      if(savedUser){
+        renderAuth(savedUser);
+      }else{
+        renderAuth(null);
+      }
+
+      const result = await bootAuth();
+      if(result.ok && result.user){
+        renderAuth(result.user);
+      }else{
+        renderAuth(null);
+      }
+    }
+
+    function handleSessionExpired(){
+      renderAuth(null);
+      setStatus("auth-status", "Session expired. Please login again.", "error");
+    }
+
+    setSessionExpiredHandler(handleSessionExpired);
+
+    qs("login-btn").addEventListener("click", doLogin);
+    qs("register-btn").addEventListener("click", doRegister);
+    qs("logout-btn").addEventListener("click", () => {
+      logout();
+      renderAuth(null);
+      setStatus("auth-status", "Logged out.", "success");
+    });
+
+    initAuth();
+  </script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy</title>
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background:#f4f6ff;
+      margin:0;
+      padding:24px;
+      color:#222;
+    }
+    .wrap{
+      max-width:900px;
+      margin:0 auto;
+    }
+    .card{
+      background:#fff;
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:20px;
+      box-shadow:0 8px 24px rgba(0,0,0,.08);
+    }
+    h1,h2{
+      margin-top:0;
+    }
+    .menu{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+      margin-top:14px;
+    }
+    button{
+      width:100%;
+      padding:16px;
+      font-size:18px;
+      border-radius:12px;
+      border:none;
+      background:#4a7dff;
+      color:white;
+      cursor:pointer;
+      font-weight:700;
+    }
+    button.secondary{
+      background:#666;
+    }
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    input{
+      width:100%;
+      box-sizing:border-box;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      margin:8px 0 14px;
+      font-size:16px;
+    }
+    .muted{
+      color:#666;
+      font-size:14px;
+    }
+    .success{
+      color:#0a8a3a;
+      font-weight:700;
+    }
+    .error{
+      color:#c62828;
+      font-weight:700;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Study Buddy</h1>
+
+    <div class="card">
+      <h2>Login</h2>
+      <div class="row">
+        <div>
+          <label>Email</label>
+          <input id="login-email" type="email" placeholder="parent@example.com" />
+        </div>
+        <div>
+          <label>Password</label>
+          <input id="login-password" type="password" placeholder="password" />
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="login-btn">Login</button>
+        <button id="logout-btn" class="secondary">Logout</button>
+      </div>
+
+      <div id="login-status" class="muted" style="margin-top:12px;">Checking login...</div>
+    </div>
+
+    <div class="card">
+      <h2>Open a page</h2>
+      <div class="menu">
+        <button onclick="go('game/words.html')">Words Game</button>
+        <button onclick="go('game/reading.html')">Reading Game</button>
+        <button onclick="go('game/math.html')">Math Game</button>
+        <button onclick="go('game/creator.html')">Parent Lesson Creator</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function go(page){
+      window.location.href = page;
+    }
+  </script>
+
+  <script type="module">
+    import { login, logout, getToken, apiGet } from "./game/js/api.js";
+
+    const qs = (id) => document.getElementById(id);
+
+    function setStatus(text, type="muted"){
+      const el = qs("login-status");
+      el.className = type;
+      el.textContent = text;
+    }
+
+    async function refreshLoginState(){
+      const token = getToken();
+
+      if(!token){
+        setStatus("Not logged in.");
+        return;
+      }
+
+      try{
+        const res = await apiGet("/api/auth/me");
+
+        if(res.ok && res.user){
+          setStatus(`Logged in as ${res.user.display_name || res.user.email}`, "success");
+        }else{
+          setStatus("Saved login is invalid. Please log in again.", "error");
+          logout();
+        }
+      }catch(err){
+        console.error(err);
+        setStatus("Could not verify login.", "error");
+      }
+    }
+
+    qs("login-btn").addEventListener("click", async () => {
+      const email = qs("login-email").value.trim();
+      const password = qs("login-password").value;
+
+      const res = await login(email, password);
+
+      if(res.ok){
+        setStatus(`Logged in as ${res.user.display_name || res.user.email}`, "success");
+      }else{
+        setStatus(res.error || "Login failed.", "error");
+      }
+    });
+
+    qs("logout-btn").addEventListener("click", () => {
+      logout();
+      setStatus("Logged out.");
+    });
+
+    refreshLoginState();
+  </script>
+</body>
+</html> -->
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy</title>
+  <style>
+    :root {
+      --bg: #f4f7ff;
+      --card: #ffffff;
+      --text: #1b2440;
+      --accent: #4a7dff;
+      --accent-2: #7a57ff;
+      --muted: #617099;
+      --shadow: 0 12px 30px rgba(50, 70, 130, 0.12);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #eef3ff 0%, #f9fbff 100%);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .wrap {
+      width: min(980px, 100%);
+    }
+    .hero {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(32px, 5vw, 54px);
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: block;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(50, 70, 130, 0.18);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: white;
+      margin-bottom: 14px;
+    }
+    .words { background: var(--accent); }
+    .reading { background: #0ea5a8; }
+    .math { background: var(--accent-2); }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Study Buddy</h1>
+      <p>Choose a game mode to start learning.</p>
+    </div>
+
+    <div class="grid">
+      <a class="card" href="./game/words.html">
+        <span class="badge words">Words</span>
+        <h2>Words Game</h2>
+        <p>Vocabulary, image cards, spelling, and Warrior mode.</p>
+      </a>
+
+      <a class="card" href="./game/reading.html">
+        <span class="badge reading">Reading</span>
+        <h2>Reading Game</h2>
+        <p>Sentence reading, speaking practice, and future progress tracking.</p>
+      </a>
+
+      <a class="card" href="./game/math.html">
+        <span class="badge math">Math</span>
+        <h2>Math Game</h2>
+        <p>Starter page for your future math games and parent-controlled lessons.</p>
+      </a>
+    </div>
+
+    <div class="footer">
+      Frontend pages live in <code>game/</code>. Backend lives in <code>server/</code>.
+    </div>
+  </div>
+</body>
+</html> -->

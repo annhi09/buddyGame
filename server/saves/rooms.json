@@ -1,0 +1,29 @@
+{
+  "class-1": {
+    "id": "class-1",
+    "score": {
+      "red": 0,
+      "blue": 0
+    },
+    "lesson": null,
+    "currentAnswer": "",
+    "currentRoundId": 0,
+    "roundOpen": false,
+    "paused": false,
+    "pauseReason": "",
+    "hostMissingSince": null,
+    "offlinePlayers": [
+      {
+        "name": "Player",
+        "role": "host",
+        "team": "red",
+        "character": "athena",
+        "hostPlays": true,
+        "playerKey": "502f83ad-c107-4faa-b540-c140b1ce98d6",
+        "connected": false,
+        "lastSeen": 1773700314851
+      }
+    ],
+    "players": []
+  }
+}
