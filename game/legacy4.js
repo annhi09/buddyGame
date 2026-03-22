@@ -286,12 +286,17 @@ function mpHostStartSession(){
   sbToast("Session started. Choose a lesson and game.");
 }
 
+// function sbNetWsUrl(){
+//   const host = (location.hostname && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
+//     ? location.hostname
+//     : 'localhost';
+//   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+//   return `${proto}//${host}:8080`;
+// }
+
 function sbNetWsUrl(){
-  const host = (location.hostname && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
-    ? location.hostname
-    : 'localhost';
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${proto}//${host}:8080`;
+  return `${proto}//${location.host}`;
 }
 
 function sbUpdateGlobalNetStatus(text=''){
