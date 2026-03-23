@@ -14,6 +14,7 @@ import "./db/index.js";
 
 const ROOT_DIR = process.cwd();
 const GAME_DIR = path.join(ROOT_DIR, "game");
+const ICONS_DIR = path.join(ROOT_DIR, "icons");
 
 fs.mkdirSync(STORAGE_ROOT, { recursive: true });
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -35,6 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(UPLOADS_DIR));
 app.use("/game", express.static(GAME_DIR));
 
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(ROOT_DIR, "index.html"));
 });
@@ -44,6 +46,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/lessons", lessonsRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/progress", progressRoutes);
+app.use("/icons", express.static(ICONS_DIR));
 
 app.use(notFound);
 app.use(errorHandler);
