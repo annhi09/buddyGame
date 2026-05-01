@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aria Voice Link</title>
+  <style>
+    :root{
+      --bg:#07111f;
+      --panel:#0f172a;
+      --panel2:#111c35;
+      --cyan:#38bdf8;
+      --violet:#8b5cf6;
+      --pink:#f472b6;
+      --gold:#facc15;
+      --muted:#94a3b8;
+      --white:#f8fafc;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--white);
+      background:
+        radial-gradient(circle at top left, rgba(56,189,248,.22), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(139,92,246,.25), transparent 32%),
+        linear-gradient(180deg,#06101f 0%, #0f172a 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      overflow:hidden;
+    }
+
+    .aria-stage{
+      width:min(980px, 96vw);
+      min-height:620px;
+      display:grid;
+      grid-template-columns:360px 1fr;
+      gap:22px;
+      align-items:stretch;
+    }
+
+    .aria-card,
+    .chat-card{
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(125,211,252,.22);
+      background:linear-gradient(180deg, rgba(15,23,42,.88), rgba(17,24,39,.82));
+      border-radius:30px;
+      box-shadow:0 28px 80px rgba(0,0,0,.42);
+      backdrop-filter:blur(14px);
+    }
+
+    .aria-card{
+      padding:24px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+
+    .aria-card::before,
+    .chat-card::before{
+      content:"";
+      position:absolute;
+      inset:-80px;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(56,189,248,.14), transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(168,85,247,.16), transparent 32%);
+      pointer-events:none;
+    }
+
+    .aria-title{
+      position:relative;
+      z-index:2;
+      margin:0 0 6px;
+      font-size:2rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      background:linear-gradient(90deg,#67e8f9,#a78bfa,#f0abfc);
+      -webkit-background-clip:text;
+      color:transparent;
+      font-weight:1000;
+    }
+
+    .aria-subtitle{
+      position:relative;
+      z-index:2;
+      color:#bae6fd;
+      font-size:.85rem;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      margin-bottom:24px;
+    }
+
+    .orb{
+      position:relative;
+      z-index:2;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      cursor:pointer;
+      border:2px solid rgba(125,211,252,.58);
+      background:radial-gradient(circle, rgba(99,102,241,.78), rgba(15,23,42,.98) 72%);
+      box-shadow:
+        0 0 30px rgba(56,189,248,.30),
+        inset 0 0 34px rgba(139,92,246,.28);
+      transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+    }
+
+    .orb:hover{ transform:translateY(-2px) scale(1.015); }
+    .orb.listening{
+      border-color:rgba(244,63,94,.92);
+      box-shadow:0 0 0 0 rgba(244,63,94,.65), 0 0 44px rgba(244,63,94,.38);
+      animation:pulse 1.7s infinite;
+    }
+    .orb.thinking{
+      border-color:rgba(250,204,21,.92);
+      box-shadow:0 0 44px rgba(250,204,21,.34), inset 0 0 34px rgba(250,204,21,.16);
+    }
+    .orb.speaking{
+      border-color:rgba(56,189,248,.98);
+      box-shadow:0 0 54px rgba(56,189,248,.52), inset 0 0 34px rgba(139,92,246,.22);
+    }
+
+    @keyframes pulse{
+      0%{ box-shadow:0 0 0 0 rgba(244,63,94,.7), 0 0 38px rgba(244,63,94,.28); }
+      70%{ box-shadow:0 0 0 24px rgba(244,63,94,0), 0 0 38px rgba(244,63,94,.28); }
+      100%{ box-shadow:0 0 0 0 rgba(244,63,94,0), 0 0 38px rgba(244,63,94,.28); }
+    }
+
+    #aria-face{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:50%;
+      filter:drop-shadow(0 0 18px rgba(56,189,248,.65));
+      transform:scale(1.04);
+      transition:opacity .08s linear;
+    }
+
+    .orb.idle-breathe #aria-face{
+      animation:breathe 3.5s ease-in-out infinite;
+    }
+
+    @keyframes breathe{
+      0%,100%{ transform:scale(1.035) translateY(0); filter:drop-shadow(0 0 16px rgba(56,189,248,.55)); }
+      50%{ transform:scale(1.065) translateY(-2px); filter:drop-shadow(0 0 26px rgba(168,85,247,.75)); }
+    }
+
+    .status-pill{
+      position:relative;
+      z-index:2;
+      margin-top:22px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:10px 14px;
+      min-width:180px;
+      border-radius:999px;
+      border:1px solid rgba(125,211,252,.24);
+      background:rgba(15,23,42,.72);
+      color:#c4b5fd;
+      font-weight:900;
+      font-size:.78rem;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:#64748b;
+      box-shadow:0 0 12px rgba(100,116,139,.6);
+    }
+    .dot.on{ background:#22c55e; box-shadow:0 0 12px rgba(34,197,94,.9); }
+    .dot.listen{ background:#fb7185; box-shadow:0 0 12px rgba(251,113,133,.9); }
+    .dot.think{ background:#facc15; box-shadow:0 0 12px rgba(250,204,21,.9); }
+    .dot.speak{ background:#38bdf8; box-shadow:0 0 12px rgba(56,189,248,.9); }
+
+    .controls{
+      position:relative;
+      z-index:2;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top:18px;
+    }
+
+    button{
+      border:0;
+      border-radius:999px;
+      padding:11px 16px;
+      color:white;
+      background:linear-gradient(135deg,var(--violet),var(--cyan));
+      font-weight:900;
+      cursor:pointer;
+      box-shadow:0 12px 28px rgba(56,189,248,.18);
+    }
+
+    button.secondary{
+      background:rgba(148,163,184,.14);
+      border:1px solid rgba(148,163,184,.22);
+      color:#dbeafe;
+    }
+
+    .chat-card{
+      padding:24px;
+      display:flex;
+      flex-direction:column;
+      min-height:620px;
+    }
+
+    .chat-header{
+      position:relative;
+      z-index:2;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding-bottom:16px;
+      border-bottom:1px solid rgba(125,211,252,.15);
+    }
+
+    .chat-header h2{
+      margin:0;
+      font-size:1.25rem;
+    }
+    .chat-header p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+
+    .transcript{
+      position:relative;
+      z-index:2;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      padding:22px 0;
+      overflow:auto;
+    }
+
+    .bubble{
+      max-width:88%;
+      padding:14px 16px;
+      border-radius:20px;
+      line-height:1.45;
+      white-space:pre-wrap;
+    }
+
+    .bubble.user{
+      align-self:flex-end;
+      background:linear-gradient(135deg, rgba(56,189,248,.18), rgba(139,92,246,.18));
+      border:1px solid rgba(125,211,252,.20);
+      color:#e0f2fe;
+    }
+
+    .bubble.aria{
+      align-self:flex-start;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      color:#f8fafc;
+      font-size:1.05rem;
+    }
+
+    .hint{
+      position:relative;
+      z-index:2;
+      color:#94a3b8;
+      font-size:.92rem;
+      line-height:1.5;
+      border-top:1px solid rgba(125,211,252,.15);
+      padding-top:16px;
+    }
+
+    @media (max-width:840px){
+      body{ overflow:auto; }
+      .aria-stage{ grid-template-columns:1fr; min-height:auto; }
+      .chat-card{ min-height:430px; }
+      .orb{ width:190px; height:190px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="aria-stage">
+    <section class="aria-card">
+      <h1 class="aria-title">Aria Core</h1>
+      <div class="aria-subtitle">Athena System Voice Assistant</div>
+
+      <div class="orb idle-breathe" id="orb" title="Click to start or stop Aria">
+        <img id="aria-face" src="./assets/aria/neutral.png" alt="Aria Core" />
+      </div>
+
+      <div class="status-pill"><span class="dot" id="status-dot"></span><span id="status">Offline</span></div>
+
+      <div class="controls">
+        <button id="toggle-btn" type="button">Start Listening</button>
+        <button id="test-btn" class="secondary" type="button">Test Voice</button>
+      </div>
+    </section>
+
+    <section class="chat-card">
+      <div class="chat-header">
+        <div>
+          <h2>Voice Link</h2>
+          <p>Click once, speak naturally, and Aria will answer.</p>
+        </div>
+      </div>
+
+      <div class="transcript" id="transcript">
+        <div class="bubble aria" id="aria-box">Hi, I’m Aria Core. Click Start Listening when you’re ready.</div>
+      </div>
+
+      <div class="hint" id="user-box">
+        Tip: Aria pauses the microphone while she speaks, then automatically listens again.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const orb = document.getElementById("orb");
+    const toggleBtn = document.getElementById("toggle-btn");
+    const testBtn = document.getElementById("test-btn");
+    const userBox = document.getElementById("user-box");
+    const ariaBox = document.getElementById("aria-box");
+    const transcript = document.getElementById("transcript");
+    const statusEl = document.getElementById("status");
+    const statusDot = document.getElementById("status-dot");
+    const ariaFace = document.getElementById("aria-face");
+
+    const API_URL = "/api/aria-chat";
+
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const synth = window.speechSynthesis;
+
+    const ARIA_FRAMES = {
+      neutral: "./assets/aria/neutral.png",
+      pbm: "./assets/aria/pbm.png",
+      fv: "./assets/aria/fv.png",
+      th: "./assets/aria/td.png",
+      td: "./assets/aria/td.png",
+      kg: "./assets/aria/kg.png",
+      chshj: "./assets/aria/chshj.png",
+      sz: "./assets/aria/ee.png",
+      nl: "./assets/aria/td.png",
+      r: "./assets/aria/oh.png",
+      ah: "./assets/aria/ah.png",
+      eh: "./assets/aria/eh.png",
+      ee: "./assets/aria/ee.png",
+      oh: "./assets/aria/oh.png",
+      ou: "./assets/aria/ou.png"
+    };
+
+    let rec = null;
+    let assistantEnabled = false;
+    let isRecognizing = false;
+    let isAriaTalking = false;
+    let isThinking = false;
+    let silenceTimer = null;
+    let mouthTimer = null;
+    let finalTranscript = "";
+    let lastSentMessage = "";
+
+    function addBubble(kind, text){
+      const div = document.createElement("div");
+      div.className = `bubble ${kind}`;
+      div.textContent = text;
+      transcript.appendChild(div);
+      transcript.scrollTop = transcript.scrollHeight;
+      return div;
+    }
+
+    function setStatus(text, mode = "off"){
+      statusEl.textContent = text;
+      statusDot.className = "dot";
+      if(mode !== "off") statusDot.classList.add(mode);
+    }
+
+    function setOrbState(state){
+      orb.classList.remove("listening", "thinking", "speaking");
+      if(state) orb.classList.add(state);
+    }
+
+    function setFrame(name){
+      const src = ARIA_FRAMES[name] || ARIA_FRAMES.neutral;
+      if(ariaFace.getAttribute("src") !== src) ariaFace.src = src;
+    }
+
+    function pickViseme(chunk){
+      const s = String(chunk || "").toLowerCase();
+      if(!s) return "neutral";
+
+      if (/^(p|b|m)/.test(s)) return "pbm";
+      if (/^(f|v)/.test(s)) return "fv";
+      if (/^th/.test(s)) return "th";
+      if (/^(t|d)/.test(s)) return "td";
+      if (/^(k|g|q|c)/.test(s)) return "kg";
+      if (/^(ch|sh|j)/.test(s)) return "chshj";
+      if (/^(s|z|x)/.test(s)) return "sz";
+      if (/^(n|l)/.test(s)) return "nl";
+      if (/^r/.test(s)) return "r";
+      if (/(oo|ou|u|w)/.test(s)) return "ou";
+      if (/(oh|o)/.test(s)) return "oh";
+      if (/(ee|i|y)/.test(s)) return "ee";
+      if (/(eh|e)/.test(s)) return "eh";
+      if (/(ah|a)/.test(s)) return "ah";
+      return "neutral";
+    }
+
+    function textToVisemeUnits(text){
+      const words = String(text || "")
+        .replace(/[^\w\s]/g, " ")
+        .split(/\s+/)
+        .filter(Boolean);
+
+      const units = [];
+
+      for(const word of words){
+        const clean = word.toLowerCase();
+        units.push(pickViseme(clean));
+
+        const parts = clean.match(/th|ch|sh|[pbmfvtdkgqcszxnlr]|[aeiouy]+/g) || [];
+        for(const part of parts){
+          units.push(pickViseme(part));
+        }
+
+        units.push("neutral");
+      }
+
+      return units.length ? units : ["neutral"];
+    }
+
+    function estimateSpeechMs(text){
+      const chars = String(text || "").length;
+      return Math.max(1200, chars * 58);
+    }
+
+    function animateMouth(text){
+      clearInterval(mouthTimer);
+
+      const units = textToVisemeUnits(text);
+      const totalMs = estimateSpeechMs(text);
+      const stepMs = Math.max(75, Math.min(145, totalMs / units.length));
+      let i = 0;
+
+      mouthTimer = setInterval(() => {
+        if(!isAriaTalking){
+          clearInterval(mouthTimer);
+          setFrame("neutral");
+          return;
+        }
+
+        setFrame(units[i % units.length]);
+        i++;
+      }, stepMs);
+    }
+
+    function initRecognition(){
+      if(!Recognition){
+        setStatus("Speech recognition unavailable", "off");
+        userBox.textContent = "Chrome or Edge is recommended for browser voice recognition.";
+        return null;
+      }
+
+      const instance = new Recognition();
+      instance.continuous = true;
+      instance.interimResults = true;
+      instance.lang = "en-US";
+
+      instance.onstart = () => {
+        isRecognizing = true;
+        setStatus("Listening", "listen");
+        setOrbState("listening");
+      };
+
+      instance.onend = () => {
+        isRecognizing = false;
+        if(assistantEnabled && !isAriaTalking && !isThinking){
+          setTimeout(safeStartListening, 260);
+        }
+      };
+
+      instance.onerror = (event) => {
+        console.warn("Speech recognition error:", event.error);
+        isRecognizing = false;
+        if(event.error === "not-allowed"){
+          stopAssistant();
+          userBox.textContent = "Microphone permission was blocked. Please allow mic access and try again.";
+          return;
+        }
+        if(assistantEnabled && !isAriaTalking && !isThinking){
+          setTimeout(safeStartListening, 700);
+        }
+      };
+
+      instance.onresult = (event) => {
+        if(isAriaTalking || isThinking) return;
+        clearTimeout(silenceTimer);
+
+        let interim = "";
+        for(let i = event.resultIndex; i < event.results.length; i++){
+          const text = event.results[i][0].transcript;
+          if(event.results[i].isFinal) finalTranscript += text + " ";
+          else interim += text;
+        }
+
+        const currentText = (finalTranscript + interim).trim();
+        if(!currentText) return;
+
+        userBox.textContent = `You: "${currentText}"`;
+
+        silenceTimer = setTimeout(() => {
+          const message = currentText.trim();
+          finalTranscript = "";
+          if(message && message !== lastSentMessage){
+            lastSentMessage = message;
+            sendToAria(message);
+          }
+        }, 1150);
+      };
+
+      return instance;
+    }
+
+    function safeStartListening(){
+      if(!assistantEnabled || isRecognizing || isAriaTalking || isThinking || !rec) return;
+      try{ rec.start(); }catch(_e){}
+    }
+
+    function safeStopListening(){
+      if(!rec) return;
+      try{ rec.stop(); }catch(_e){}
+    }
+
+    function startAssistant(){
+      if(!rec) rec = initRecognition();
+      if(!rec) return;
+
+      assistantEnabled = true;
+      toggleBtn.textContent = "Stop Listening";
+      userBox.textContent = "Listening... say something.";
+      safeStartListening();
+    }
+
+    function stopAssistant(){
+      assistantEnabled = false;
+      clearTimeout(silenceTimer);
+      clearInterval(mouthTimer);
+      finalTranscript = "";
+      lastSentMessage = "";
+      safeStopListening();
+      synth.cancel();
+      isAriaTalking = false;
+      isThinking = false;
+      isRecognizing = false;
+      toggleBtn.textContent = "Start Listening";
+      setOrbState("");
+      setFrame("neutral");
+      setStatus("Offline", "off");
+    }
+
+    async function sendToAria(text){
+      if(!assistantEnabled || isThinking || isAriaTalking) return;
+
+      isThinking = true;
+      clearTimeout(silenceTimer);
+      safeStopListening();
+      setStatus("Thinking", "think");
+      setOrbState("thinking");
+      addBubble("user", text);
+
+      try{
+        const response = await fetch(API_URL, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ message:text, context:"Voice Test Page" })
+        });
+
+        const data = await response.json();
+        const reply = data.reply || data.error || "I am here, but I could not form a reply.";
+        speak(reply);
+      }catch(error){
+        console.error(error);
+        speak("I lost connection to my StudyBuddy voice route. Please check the server.");
+      }
+    }
+
+    function chooseVoice(){
+      const voices = synth.getVoices() || [];
+      return voices.find(v => /samantha/i.test(v.name)) ||
+             voices.find(v => /female|zira|victoria|karen|susan/i.test(v.name)) ||
+             voices.find(v => v.lang === "en-US") ||
+             voices[0] || null;
+    }
+
+    function speak(text){
+      isThinking = false;
+      isAriaTalking = true;
+      safeStopListening();
+
+      ariaBox.textContent = text;
+      addBubble("aria", text);
+      setStatus("Aria Speaking", "speak");
+      setOrbState("speaking");
+
+      synth.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.pitch = 1.08;
+      utterance.rate = 0.92;
+      utterance.lang = "en-US";
+      const selectedVoice = chooseVoice();
+      if(selectedVoice) utterance.voice = selectedVoice;
+
+      utterance.onstart = () => {
+        isAriaTalking = true;
+        animateMouth(text);
+      };
+
+      const finish = () => {
+        isAriaTalking = false;
+        clearInterval(mouthTimer);
+        setFrame("neutral");
+
+        if(assistantEnabled){
+          setStatus("Listening", "listen");
+          setOrbState("listening");
+          setTimeout(safeStartListening, 420);
+        }else{
+          setStatus("Offline", "off");
+          setOrbState("");
+        }
+      };
+
+      utterance.onend = finish;
+      utterance.onerror = finish;
+      synth.speak(utterance);
+    }
+
+    function toggleAssistant(){
+      if(assistantEnabled) stopAssistant();
+      else startAssistant();
+    }
+
+    orb.addEventListener("click", toggleAssistant);
+    toggleBtn.addEventListener("click", toggleAssistant);
+    testBtn.addEventListener("click", () => {
+      if(!assistantEnabled) assistantEnabled = true;
+      toggleBtn.textContent = "Stop Listening";
+      speak("Hello Long. Aria Core is online. My voice and animation systems are ready.");
+    });
+
+    if(synth.onvoiceschanged !== undefined){
+      synth.onvoiceschanged = () => synth.getVoices();
+    }
+
+    setStatus("Offline", "off");
+  </script>
+</body>
+</html>

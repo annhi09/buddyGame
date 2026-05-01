@@ -1,0 +1,240 @@
+/* game/css/team-intro.css */
+
+.team-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: none;
+}
+
+.team-intro.open {
+  display: block;
+}
+
+.team-intro.hidden {
+  display: none;
+}
+
+.team-intro-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 8, 20, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+.team-intro-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ti-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.06), transparent 38%),
+    linear-gradient(180deg, #081225 0%, #101e3a 48%, #081225 100%);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.92;
+  transform: scale(1.05);
+  transition: transform .4s ease, opacity .3s ease;
+}
+
+.ti-fx,
+.ti-team,
+.ti-versus {
+  position: absolute;
+  inset: 0;
+}
+
+.ti-char {
+  position: absolute;
+  max-width: 34vw;
+  max-height: 72vh;
+  object-fit: contain;
+  opacity: 0;
+  transform: translate3d(0,0,0) scale(.9);
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,.45));
+  will-change: transform, opacity;
+}
+
+.ti-team-red .ti-red-child {
+  left: 4vw;
+  bottom: 6vh;
+}
+
+.ti-team-red .ti-red-creature {
+  left: 23vw;
+  bottom: 10vh;
+  max-width: 30vw;
+}
+
+.ti-team-red .ti-red-leader {
+  left: 12vw;
+  bottom: 8vh;
+  max-width: 36vw;
+}
+
+.ti-team-blue .ti-blue-child {
+  right: 4vw;
+  bottom: 6vh;
+}
+
+.ti-team-blue .ti-blue-creature {
+  right: 23vw;
+  bottom: 10vh;
+  max-width: 30vw;
+}
+
+.ti-team-blue .ti-blue-leader {
+  right: 12vw;
+  bottom: 8vh;
+  max-width: 36vw;
+}
+
+.ti-title-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 6vh;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.ti-title {
+  font-size: clamp(26px, 5vw, 64px);
+  font-weight: 1000;
+  letter-spacing: .08em;
+  color: #fff;
+  text-shadow: 0 8px 22px rgba(0,0,0,.48);
+  opacity: 0;
+  transform: scale(.8) translateY(16px);
+}
+
+.ti-subtitle {
+  margin-top: 8px;
+  font-size: clamp(12px, 1.6vw, 18px);
+  font-weight: 800;
+  color: rgba(255,255,255,.88);
+  opacity: 0;
+  transform: scale(.9) translateY(10px);
+}
+
+.ti-title-red {
+  color: #ffd56a;
+}
+
+.ti-title-blue {
+  color: #9fe2ff;
+}
+
+.ti-versus {
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: scale(.85);
+}
+
+.ti-versus.ti-vs-show {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.ti-vs-text {
+  font-size: clamp(42px, 10vw, 120px);
+  font-weight: 1000;
+  color: white;
+  text-shadow: 0 10px 28px rgba(0,0,0,.5);
+}
+
+.ti-enter-left {
+  opacity: 1;
+  animation: tiEnterLeft .34s cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+.ti-enter-right {
+  opacity: 1;
+  animation: tiEnterRight .34s cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+.ti-enter-drop {
+  opacity: 1;
+  animation: tiEnterDrop .34s cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+.ti-lock {
+  filter:
+    drop-shadow(0 18px 40px rgba(0,0,0,.45))
+    drop-shadow(0 0 30px rgba(255,255,255,.15));
+}
+
+.ti-title-pop {
+  opacity: 1;
+  animation: tiTitlePop .28s ease-out forwards;
+}
+
+.team-intro.ti-shake .team-intro-scene {
+  animation: tiShake .24s ease-in-out;
+}
+
+.team-intro.closing {
+  opacity: 0;
+  transition: opacity .22s ease;
+}
+
+@keyframes tiEnterLeft {
+  0%   { opacity: 0; transform: translateX(-180px) scale(.88); }
+  72%  { opacity: 1; transform: translateX(10px) scale(1.03); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes tiEnterRight {
+  0%   { opacity: 0; transform: translateX(180px) scale(.88); }
+  72%  { opacity: 1; transform: translateX(-10px) scale(1.03); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes tiEnterDrop {
+  0%   { opacity: 0; transform: translateY(-140px) scale(.88); }
+  70%  { opacity: 1; transform: translateY(12px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tiTitlePop {
+  0%   { opacity: 0; transform: scale(.75) translateY(16px); }
+  80%  { opacity: 1; transform: scale(1.04) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tiShake {
+  0% { transform: translate(0,0); }
+  20% { transform: translate(-3px, 1px); }
+  40% { transform: translate(3px, -1px); }
+  60% { transform: translate(-2px, 1px); }
+  80% { transform: translate(2px, -1px); }
+  100% { transform: translate(0,0); }
+}
+
+@media (max-width: 900px) {
+  .ti-char {
+    max-width: 46vw;
+    max-height: 52vh;
+  }
+
+  .ti-team-red .ti-red-child,
+  .ti-team-blue .ti-blue-child {
+    bottom: 8vh;
+  }
+
+  .ti-team-red .ti-red-creature,
+  .ti-team-blue .ti-blue-creature {
+    bottom: 13vh;
+  }
+
+  .ti-team-red .ti-red-leader,
+  .ti-team-blue .ti-blue-leader {
+    bottom: 10vh;
+  }
+}

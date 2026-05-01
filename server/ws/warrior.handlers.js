@@ -186,18 +186,30 @@ function normalizeProgress(value) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+// function makeRaceState(msg, room) {
+//   return {
+//     gameId: String(msg.gameId || ""),
+//     roundId: String(msg.roundId || `race-${Date.now()}`),
+//     seed: String(msg.seed || ""),
+//     lesson: msg.lesson || room.lesson || null,
+//     startedAt: Date.now(),
+//     resolved: false,
+//     winnerTeam: "",
+//     progress: { red: 0, blue: 0 },
+//     completedAt: { red: null, blue: null },
+//     meta: { red: null, blue: null },
+//   };
+// }
+
 function makeRaceState(msg, room) {
   return {
     gameId: String(msg.gameId || ""),
-    roundId: String(msg.roundId || `race-${Date.now()}`),
+    roundId: String(msg.roundId || ""),
     seed: String(msg.seed || ""),
     lesson: msg.lesson || room.lesson || null,
-    startedAt: Date.now(),
-    resolved: false,
-    winnerTeam: "",
     progress: { red: 0, blue: 0 },
-    completedAt: { red: null, blue: null },
-    meta: { red: null, blue: null },
+    completions: {},
+    resolved: false,
   };
 }
 
@@ -228,55 +240,203 @@ function finishRace(room, winnerTeam, extra = {}) {
   });
 }
 
+// function handleRaceComplete(room, player, msg) {
+//   if (!room.race) return;
+//   if (room.race.resolved) return;
+//   if (String(msg.roundId || "") !== room.race.roundId) return;
+//   if (String(msg.gameId || "") !== room.race.gameId) return;
+
+//   const team = player.team;
+//   if (team !== "red" && team !== "blue") return;
+//   if (room.race.completedAt[team]) return;
+
+//   room.race.completedAt[team] = Date.now();
+//   room.race.progress[team] = 100;
+//   room.race.meta[team] = msg.meta || null;
+
+//   // Special scoring rule for Repeat Pro
+//   if (room.race.gameId === "repeatpro") {
+//     const redDone = !!room.race.completedAt.red;
+//     const blueDone = !!room.race.completedAt.blue;
+
+//     if (!redDone || !blueDone) return;
+
+//     const redCorrect = Number(room.race.meta.red?.correct || 0);
+//     const blueCorrect = Number(room.race.meta.blue?.correct || 0);
+
+//     if (redCorrect > blueCorrect) {
+//       finishRace(room, "red", { meta: room.race.meta.red });
+//       return;
+//     }
+//     if (blueCorrect > redCorrect) {
+//       finishRace(room, "blue", { meta: room.race.meta.blue });
+//       return;
+//     }
+
+//     const redAt = room.race.completedAt.red || 0;
+//     const blueAt = room.race.completedAt.blue || 0;
+
+//     if (redAt && blueAt) {
+//       if (redAt < blueAt) finishRace(room, "red", { meta: room.race.meta.red });
+//       else if (blueAt < redAt) finishRace(room, "blue", { meta: room.race.meta.blue });
+//       else finishRace(room, "", { meta: null });
+//     }
+//     return;
+//   }
+
+//   // Default race rule: first finisher wins
+//   finishRace(room, team, {
+//     winnerName: player.name,
+//     winnerCharacter: player.character,
+//     meta: room.race.meta[team],
+//   });
+// }
+
 function handleRaceComplete(room, player, msg) {
-  if (!room.race) return;
-  if (room.race.resolved) return;
-  if (String(msg.roundId || "") !== room.race.roundId) return;
-  if (String(msg.gameId || "") !== room.race.gameId) return;
+  if (!room.race || room.race.resolved) return;
+  if (String(msg.roundId || "") !== String(room.race.roundId || "")) return;
+  if (String(msg.gameId || "") !== String(room.race.gameId || "")) return;
 
-  const team = player.team;
-  if (team !== "red" && team !== "blue") return;
-  if (room.race.completedAt[team]) return;
+  if (!room.race.completions) {
+    room.race.completions = {};
+  }
 
-  room.race.completedAt[team] = Date.now();
-  room.race.progress[team] = 100;
-  room.race.meta[team] = msg.meta || null;
+  if (!room.score) {
+    room.score = { red: 0, blue: 0 };
+  }
 
-  // Special scoring rule for Repeat Pro
-  if (room.race.gameId === "repeatpro") {
-    const redDone = !!room.race.completedAt.red;
-    const blueDone = !!room.race.completedAt.blue;
+  room.race.completions[player.team] = {
+    team: player.team,
+    name: player.name,
+    role: player.role,
+    durationMs: Number(msg.durationMs || 0),
+    meta: msg.meta || {},
+    finishedAt: Date.now(),
+  };
 
-    if (!redDone || !blueDone) return;
+  const redDone = room.race.completions.red;
+  const blueDone = room.race.completions.blue;
 
-    const redCorrect = Number(room.race.meta.red?.correct || 0);
-    const blueCorrect = Number(room.race.meta.blue?.correct || 0);
-
-    if (redCorrect > blueCorrect) {
-      finishRace(room, "red", { meta: room.race.meta.red });
-      return;
-    }
-    if (blueCorrect > redCorrect) {
-      finishRace(room, "blue", { meta: room.race.meta.blue });
-      return;
-    }
-
-    const redAt = room.race.completedAt.red || 0;
-    const blueAt = room.race.completedAt.blue || 0;
-
-    if (redAt && blueAt) {
-      if (redAt < blueAt) finishRace(room, "red", { meta: room.race.meta.red });
-      else if (blueAt < redAt) finishRace(room, "blue", { meta: room.race.meta.blue });
-      else finishRace(room, "", { meta: null });
-    }
+  if (!redDone || !blueDone) {
     return;
   }
 
-  // Default race rule: first finisher wins
-  finishRace(room, team, {
-    winnerName: player.name,
-    winnerCharacter: player.character,
-    meta: room.race.meta[team],
+  room.race.resolved = true;
+
+  // ==================================================
+  // Runner / Sky Patrol = score battle, NOT progress race
+  // ==================================================
+  if (room.race.gameId === "runner") {
+    const a = redDone;
+    const b = blueDone;
+
+    const aScore = Number(a?.meta?.score || 0);
+    const bScore = Number(b?.meta?.score || 0);
+
+    const aWrong = Number(a?.meta?.wrongHits || 0);
+    const bWrong = Number(b?.meta?.wrongHits || 0);
+
+    const aDuration = Number(a?.durationMs || 0);
+    const bDuration = Number(b?.durationMs || 0);
+
+    let result = "tie";
+    let winnerTeam = "";
+
+    if (aScore > bScore) {
+      result = "win";
+      winnerTeam = a.team;
+    } else if (bScore > aScore) {
+      result = "win";
+      winnerTeam = b.team;
+    } else if (aWrong < bWrong) {
+      result = "win";
+      winnerTeam = a.team;
+    } else if (bWrong < aWrong) {
+      result = "win";
+      winnerTeam = b.team;
+    } else if (aDuration > 0 && bDuration > 0 && aDuration < bDuration) {
+      result = "win";
+      winnerTeam = a.team;
+    } else if (aDuration > 0 && bDuration > 0 && bDuration < aDuration) {
+      result = "win";
+      winnerTeam = b.team;
+    }
+
+    if (winnerTeam) {
+      room.score[winnerTeam] = (room.score[winnerTeam] || 0) + 1;
+    }
+
+    for (const [clientWs, p] of room.players.entries()) {
+      const mine = p.team === "red" ? a : b;
+      const theirs = p.team === "red" ? b : a;
+
+      send(clientWs, {
+        type: "race_result",
+        roomId: room.id,
+        gameId: room.race.gameId,
+        roundId: room.race.roundId,
+        result,
+        winnerTeam,
+        youMeta: {
+          ...(mine.meta || {}),
+          durationMs: Number(mine.durationMs || 0),
+          team: mine.team,
+          name: mine.name,
+        },
+        oppMeta: {
+          ...(theirs.meta || {}),
+          durationMs: Number(theirs.durationMs || 0),
+          team: theirs.team,
+          name: theirs.name,
+        },
+        score: room.score,
+      });
+    }
+
+    broadcast(room, {
+      type: "room_state",
+      ...roomState(room),
+    });
+
+    return;
+  }
+
+  // ==================================================
+  // Generic race modes = earlier duration wins
+  // ==================================================
+  const a = redDone;
+  const b = blueDone;
+
+  let result = "tie";
+  let winnerTeam = "";
+
+  if (a.durationMs > 0 && b.durationMs > 0) {
+    if (a.durationMs < b.durationMs) {
+      result = "win";
+      winnerTeam = a.team;
+    } else if (b.durationMs < a.durationMs) {
+      result = "win";
+      winnerTeam = b.team;
+    }
+  }
+
+  if (winnerTeam) {
+    room.score[winnerTeam] = (room.score[winnerTeam] || 0) + 1;
+  }
+
+  broadcast(room, {
+    type: "race_result",
+    roomId: room.id,
+    gameId: room.race.gameId,
+    roundId: room.race.roundId,
+    result,
+    winnerTeam,
+    score: room.score,
+  });
+
+  broadcast(room, {
+    type: "room_state",
+    ...roomState(room),
   });
 }
 
@@ -292,11 +452,20 @@ function handleMessage(ws, msg) {
 
     ws.roomId = roomId;
 
+    // const player = {
+    //   name: String(msg.name || "Player"),
+    //   role: msg.role === "host" ? "host" : "player",
+    //   team: msg.team === "blue" ? "blue" : "red",
+    //   character: msg.character === "aria" ? "aria" : "athena",
+    //   hostPlays: !!msg.hostPlays,
+    // };
+
     const player = {
       name: String(msg.name || "Player"),
       role: msg.role === "host" ? "host" : "player",
       team: msg.team === "blue" ? "blue" : "red",
       character: msg.character === "aria" ? "aria" : "athena",
+      vehicle: msg.vehicle === "tank" ? "tank" : "heli",
       hostPlays: !!msg.hostPlays,
     };
 
@@ -382,46 +551,46 @@ function handleMessage(ws, msg) {
   // =========================
   // Generic race VS modes
   // =========================
-  if (msg.type === "race_mode_start") {
-    if (player.role !== "host") return;
+  // if (msg.type === "race_mode_start") {
+  //   if (player.role !== "host") return;
 
-    room.lesson = msg.lesson || room.lesson || null;
-    room.race = makeRaceState(msg, room);
+  //   room.lesson = msg.lesson || room.lesson || null;
+  //   room.race = makeRaceState(msg, room);
 
-    broadcast(room, {
-      type: "race_mode_start",
-      roomId: room.id,
-      gameId: room.race.gameId,
-      roundId: room.race.roundId,
-      seed: room.race.seed,
-      lesson: room.race.lesson,
-      score: room.score,
-    });
-    return;
-  }
+  //   broadcast(room, {
+  //     type: "race_mode_start",
+  //     roomId: room.id,
+  //     gameId: room.race.gameId,
+  //     roundId: room.race.roundId,
+  //     seed: room.race.seed,
+  //     lesson: room.race.lesson,
+  //     score: room.score,
+  //   });
+  //   return;
+  // }
 
-  if (msg.type === "race_progress") {
-    if (!room.race || room.race.resolved) return;
-    if (String(msg.roundId || "") !== room.race.roundId) return;
-    if (String(msg.gameId || "") !== room.race.gameId) return;
+  // if (msg.type === "race_progress") {
+  //   if (!room.race || room.race.resolved) return;
+  //   if (String(msg.roundId || "") !== room.race.roundId) return;
+  //   if (String(msg.gameId || "") !== room.race.gameId) return;
 
-    room.race.progress[player.team] = normalizeProgress(msg.progress);
+  //   room.race.progress[player.team] = normalizeProgress(msg.progress);
 
-    broadcast(room, {
-      type: "race_progress",
-      roomId: room.id,
-      gameId: room.race.gameId,
-      roundId: room.race.roundId,
-      team: player.team,
-      progress: room.race.progress[player.team],
-    });
-    return;
-  }
+  //   broadcast(room, {
+  //     type: "race_progress",
+  //     roomId: room.id,
+  //     gameId: room.race.gameId,
+  //     roundId: room.race.roundId,
+  //     team: player.team,
+  //     progress: room.race.progress[player.team],
+  //   });
+  //   return;
+  // }
 
-  if (msg.type === "race_complete") {
-    handleRaceComplete(room, player, msg);
-    return;
-  }
+  // if (msg.type === "race_complete") {
+  //   handleRaceComplete(room, player, msg);
+  //   return;
+  // }
 
     if (msg.type === "race_mode_start") {
     if (player.role !== "host") return;
@@ -463,6 +632,181 @@ function handleMessage(ws, msg) {
     handleRaceComplete(room, player, msg);
     return;
   }
+
+ if (msg.type === "runner_shared_open") {
+  const room = getRoom(msg.roomId);
+  broadcast(room, {
+    type: "runner_shared_open",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    seed: msg.seed || "",
+  });
+  return;
+}
+
+if (msg.type === "runner_shared_state") {
+  const room = getRoom(msg.roomId);
+  broadcast(room, {
+    type: "runner_shared_state",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    state: msg.state || {},
+  });
+  return;
+}
+
+if (msg.type === "runner_shared_pick") {
+  const room = getRoom(msg.roomId);
+  const sender = room.players.get(ws);
+  if (!sender) return;
+
+  broadcast(room, {
+    type: "runner_shared_pick",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    team: sender.team,
+    enemyId: msg.enemyId || "",
+  });
+  return;
+}
+
+if (msg.type === "runner_shared_end") {
+  const room = getRoom(msg.roomId);
+  broadcast(room, {
+    type: "runner_shared_end",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    score: msg.score || { red: 0, blue: 0 },
+    winnerTeam: msg.winnerTeam || "",
+  });
+  return;
+}
+
+//   if (msg.type === "runner_shared_open") {
+//   const room = getRoom(msg.roomId);
+//   broadcast(room, {
+//     type: "runner_shared_open",
+//     roomId: msg.roomId,
+//     roundId: msg.roundId,
+//     seed: msg.seed || "",
+//   });
+//   return;
+// }
+
+// if (msg.type === "runner_shared_state") {
+//   const room = getRoom(msg.roomId);
+//   broadcast(room, {
+//     type: "runner_shared_state",
+//     roomId: msg.roomId,
+//     roundId: msg.roundId,
+//     state: msg.state || {},
+//   });
+//   return;
+// }
+
+if (msg.type === "runner_shared_input") {
+  const room = getRoom(msg.roomId);
+  const sender = room.players.get(ws);
+  if (!sender) return;
+
+  broadcast(room, {
+    type: "runner_shared_input",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    team: sender.team,
+    input: msg.input || {},
+  });
+  return;
+}
+
+if (msg.type === "runner_shared_fire") {
+  const room = getRoom(msg.roomId);
+  const sender = room.players.get(ws);
+  if (!sender) return;
+
+  broadcast(room, {
+    type: "runner_shared_fire",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    team: sender.team,
+  });
+  return;
+}
+
+// if (msg.type === "runner_shared_end") {
+//   const room = getRoom(msg.roomId);
+//   broadcast(room, {
+//     type: "runner_shared_end",
+//     roomId: msg.roomId,
+//     roundId: msg.roundId,
+//     score: msg.score || { red: 0, blue: 0 },
+//     winnerTeam: msg.winnerTeam || "",
+//   });
+//   return;
+// }
+
+if (msg.type === "skybattle_shared_open") {
+  const room = getRoom(msg.roomId);
+  broadcast(room, {
+    type: "skybattle_shared_open",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    seed: msg.seed || "",
+  });
+  return;
+}
+
+if (msg.type === "skybattle_shared_state") {
+  const room = getRoom(msg.roomId);
+  broadcast(room, {
+    type: "skybattle_shared_state",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    state: msg.state || {},
+  });
+  return;
+}
+
+if (msg.type === "skybattle_shared_input") {
+  const room = getRoom(msg.roomId);
+  const sender = room.players.get(ws);
+  if (!sender) return;
+
+  broadcast(room, {
+    type: "skybattle_shared_input",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    team: sender.team,
+    input: msg.input || {},
+  });
+  return;
+}
+
+if (msg.type === "skybattle_shared_fire") {
+  const room = getRoom(msg.roomId);
+  const sender = room.players.get(ws);
+  if (!sender) return;
+
+  broadcast(room, {
+    type: "skybattle_shared_fire",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    team: sender.team,
+  });
+  return;
+}
+
+if (msg.type === "skybattle_shared_end") {
+  const room = getRoom(msg.roomId);
+  broadcast(room, {
+    type: "skybattle_shared_end",
+    roomId: msg.roomId,
+    roundId: msg.roundId,
+    score: msg.score || { red: 0, blue: 0 },
+    winnerTeam: msg.winnerTeam || "",
+  });
+  return;
+}
 
   if (msg.type === "warrior_answer") {
     const answer = String(msg.answer || "").trim().toUpperCase();

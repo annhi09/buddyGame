@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aria Voice Link</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; }
+        #mic-btn { width: 100px; height: 100px; border-radius: 50%; border: none; background: #6c5ce7; color: white; font-size: 40px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); }
+        #mic-btn.listening { background: #ff4757; transform: scale(1.1); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 71, 87, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); } }
+        #status { margin-top: 20px; color: #57606f; }
+    </style>
+</head>
+<body>
+    <button id="mic-btn">🎙️</button>
+    <p id="status">Tap the mic to talk to Aria</p>
+
+    <script>
+        const btn = document.getElementById('mic-btn');
+        const status = document.getElementById('status');
+        
+        // 1. Setup Speech Recognition (STT)
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new Recognition();
+
+        // 2. Setup Speech Synthesis (TTS)
+        const synth = window.speechSynthesis;
+
+        btn.onclick = () => {
+            rec.start();
+            btn.classList.add('listening');
+            status.innerText = "Aria is listening...";
+        };
+
+        rec.onresult = async (event) => {
+            const text = event.results[0][0].transcript;
+            btn.classList.remove('listening');
+            status.innerText = `You said: "${text}"`;
+
+            // 3. Send to your Node server
+            const response = await fetch('/api/aria-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, context: 'Voice Command' })
+            });
+            const data = await response.json();
+
+            // 4. Speak the response back
+            const utterance = new SpeechSynthesisUtterance(data.reply);
+            utterance.pitch = 1.2; // Slightly higher for a "Nhi" youthful vibe
+            utterance.rate = 1.0;
+            synth.speak(utterance);
+            status.innerText = "Aria is speaking...";
+        };
+    </script>
+</body>
+</html>

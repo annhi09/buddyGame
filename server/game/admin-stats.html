@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Studio Analytics | Admin</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background: #6c5ce7; color: white; }
+        .status-tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #e1f5fe; color: #01579b; }
+    </style>
+</head>
+<body>
+    <h1>📊 Studio Intelligence Dashboard</h1>
+    
+    <div class="card">
+        <h2>Recent Progress (SQLite)</h2>
+        <table id="progress-table">
+            <thead><tr><th>Child ID</th><th>Lesson</th><th>Stars</th><th>Score</th><th>Last Updated</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadStats() {
+            const res = await fetch('/api/admin/raw-stats');
+            const data = await res.json();
+            
+            const tbody = document.querySelector('#progress-table tbody');
+            tbody.innerHTML = data.progress.map(row => `
+                <tr>
+                    <td>${row.child_id || row.childId}</td>
+                    <td>${row.lesson_id || row.lessonId}</td>
+                    <td>⭐ ${row.stars}</td>
+                    <td>${row.bestScore || row.score}</td>
+                    <td>${new Date(row.updated_at).toLocaleString()}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5">No cloud data yet. Still in LocalStorage!</td></tr>';
+        }
+        loadStats();
+    </script>
+</body>
+</html>

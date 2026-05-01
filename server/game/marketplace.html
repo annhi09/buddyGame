@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace | BuddyGame</title>
+  <style>
+    :root{
+      --bg:#f4f7ff;
+      --card:#fff;
+      --ink:#22314f;
+      --muted:#66728c;
+      --line:#dbe5ff;
+      --blue:#2d6bff;
+      --blue-soft:#eef4ff;
+      --green:#17a36b;
+      --green-soft:#eafaf1;
+      --shadow:0 12px 28px rgba(51,78,153,.08);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:Arial,sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(120,140,255,.14), transparent 20%),
+        radial-gradient(circle at top right, rgba(90,180,255,.10), transparent 22%),
+        linear-gradient(180deg, #dfe8ff 0%, #eef3ff 45%, #f7faff 100%);
+    }
+
+    .page{
+      max-width:1240px;
+      margin:0 auto;
+      padding:22px;
+    }
+
+    .hero{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:18px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    .hero h1{
+      margin:0;
+      font-size:2rem;
+      line-height:1.08;
+    }
+
+    .market-tab.active{
+      background:#2d6bff !important;
+      color:#fff !important;
+      box-shadow:0 10px 22px rgba(45,107,255,.18);
+    }
+
+    .sub{
+      margin-top:6px;
+      color:var(--muted);
+      max-width:760px;
+    }
+
+    .top-actions,.row,.inline-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      border:none;
+      border-radius:14px;
+      padding:11px 15px;
+      font-weight:800;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition:.15s ease;
+      font-size:.96rem;
+    }
+
+    .btn:hover{ transform:translateY(-1px); }
+
+    .btn-primary{ background:var(--blue); color:#fff; }
+    .btn-soft{ background:var(--blue-soft); color:#3553a6; }
+    .btn-green{ background:var(--green); color:#fff; }
+
+    .section-card{
+      background:var(--blue-soft);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+    }
+
+    .filters{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:14px;
+    }
+
+    .filters input,
+    .filters select{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:11px 12px;
+      font:inherit;
+      color:var(--ink);
+      background:#fff;
+      box-shadow:0 4px 10px rgba(51,78,153,.04);
+    }
+
+    .filters input{
+      min-width:240px;
+      flex:1;
+    }
+
+    .workspace-results-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .workspace-results-text{
+      color:var(--muted);
+      font-weight:700;
+      font-size:.94rem;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+      gap:16px;
+      margin-top:12px;
+    }
+
+    .card{
+      background:linear-gradient(180deg,#fff 0%,#f9fbff 100%);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      transition:.18s ease;
+    }
+
+    .card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 18px 34px rgba(51,78,153,.12);
+    }
+
+    .card-top{
+      display:grid;
+      grid-template-columns:110px 1fr;
+      gap:14px;
+      align-items:start;
+    }
+
+    .thumb{
+      width:110px;
+      height:110px;
+      object-fit:cover;
+      border-radius:18px;
+      background:#eef3ff;
+      border:1px solid #dfe8ff;
+      display:block;
+    }
+
+    .thumb-fallback{
+      width:110px;
+      height:110px;
+      border-radius:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(135deg,#eef4ff,#f8fbff);
+      border:1px solid #dfe8ff;
+      font-size:2rem;
+      color:#5d709f;
+    }
+
+    .card-title{
+      font-size:1.08rem;
+      font-weight:900;
+      line-height:1.2;
+      color:var(--ink);
+    }
+
+    .card-sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:.94rem;
+    }
+
+    .price{
+      margin-top:10px;
+      font-size:1.05rem;
+      font-weight:900;
+      color:var(--blue);
+    }
+
+    .item-meta{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:var(--blue-soft);
+      color:#4560aa;
+      font-size:.82rem;
+      font-weight:800;
+    }
+
+    .tag.free{
+      background:var(--green-soft);
+      color:var(--green);
+    }
+
+    .tag.export{
+      background:#fff4e5;
+      color:#9b5d00;
+    }
+
+    .preview{
+      margin-top:12px;
+      padding:12px;
+      border-radius:16px;
+      background:#f8faff;
+      border:1px solid #e7eeff;
+    }
+
+    .muted{ color:var(--muted); }
+
+    .empty{
+      border:1px dashed var(--line);
+      border-radius:18px;
+      padding:20px;
+      text-align:center;
+      color:var(--muted);
+      background:#fbfcff;
+    }
+
+    @media (max-width:720px){
+      .page{ padding:16px; }
+      .card-top{ grid-template-columns:1fr; }
+      .thumb,.thumb-fallback{
+        width:100%;
+        max-width:220px;
+        height:160px;
+        margin:0 auto;
+      }
+    }
+
+    /* .market-preview-strip{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    } */
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div>
+        <h1>BuddyGame Marketplace</h1>
+        <div class="sub">Discover reading stories, word packs, free library releases, and classroom-ready lessons for BuddyGame.</div>
+      </div>
+
+      <div class="top-actions">
+        <a class="btn btn-soft" href="./index.html">🏠 Home</a>
+        <a class="btn btn-soft" href="./my-library.html">📚 My Library</a>
+      </div>
+    </section>
+
+    <div class="market-tabs" id="market-tabs" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <button class="btn btn-soft market-tab active" type="button" data-access-tab="all">✨ All Packs</button>
+      <button class="btn btn-soft market-tab" type="button" data-access-tab="paid">💳 Paid Marketplace</button>
+      <button class="btn btn-soft market-tab" type="button" data-access-tab="free_library">📚 Free Library</button>
+    </div>
+
+    <div id="featured-free-wrap" style="display:none; margin-bottom:18px;">
+      <div style="font-weight:900; font-size:1.05rem; margin-bottom:10px;">🌟 Featured Free Library</div>
+      <div id="featured-free-list" class="grid"></div>
+    </div>
+
+    <section class="section-card">
+      <div class="filters">
+        <input id="search-input" type="text" placeholder="Search packs..." />
+
+        <select id="type-filter">
+          <option value="">All types</option>
+          <option value="reading">Reading</option>
+          <option value="words">Words</option>
+        </select>
+
+        <select id="access-filter">
+          <option value="">All access</option>
+          <option value="paid">Paid</option>
+          <option value="free_library">Free Library</option>
+        </select>
+
+        <button id="refresh-btn" class="btn btn-soft" type="button">🔄 Refresh</button>
+      </div>
+
+      <div class="workspace-results-row">
+        <div id="marketplace-status" class="workspace-results-text">Loading packs...</div>
+      </div>
+
+      <div id="marketplace-list" class="grid"></div>
+    </section>
+  </div>
+
+  <script type="module" src="./js/marketplace.js"></script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace | BuddyGame</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f6f8ff;color:#223}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:18px}
+    .card{background:#fff;border:1px solid #dfe6ff;border-radius:18px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.06)}
+    .thumb{width:100%;height:150px;object-fit:cover;border-radius:12px;background:#eef3ff}
+    .muted{color:#667}
+    button,a.btn{border:none;border-radius:12px;padding:10px 14px;background:#2d6bff;color:#fff;cursor:pointer;text-decoration:none;display:inline-block}
+    button.secondary{background:#eef3ff;color:#3553a6}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .filters{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+    .preview{margin-top:10px;padding:10px;border-radius:12px;background:#f8faff}
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div>
+      <h1 style="margin:0;">BuddyGame Marketplace</h1>
+      <div class="muted">Discover story and lesson packs</div>
+    </div>
+    <div class="row">
+      <a class="btn secondary" href="./index.html">Home</a>
+      <a class="btn secondary" href="./my-library.html">My Library</a>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input id="search-input" type="text" placeholder="Search packs..." style="padding:10px 12px;border-radius:12px;border:1px solid #ccd6ff;min-width:220px;" />
+    <select id="type-filter" style="padding:10px 12px;border-radius:12px;border:1px solid #ccd6ff;">
+      <option value="">All types</option>
+      <option value="reading">Reading</option>
+      <option value="words">Words</option>
+    </select>
+    <button id="refresh-btn" class="secondary">Refresh</button>
+  </div>
+
+  <div id="marketplace-status" class="muted" style="margin-top:14px;">Loading packs...</div>
+  <div id="marketplace-list" class="grid"></div>
+
+  <script type="module" src="./js/marketplace.js"></script>
+</body>
+</html> -->

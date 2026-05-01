@@ -3,137 +3,855 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Study Buddy</title>
+  <title>BuddyGame | Athena & Aria Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Quicksand:wght@700&display=swap" rel="stylesheet">
   <style>
-    body{
-      font-family: Arial, sans-serif;
-      margin:0;
-      background:#f4f7ff;
-      color:#222;
+    :root{
+      --text:#ffffff;
+      --muted:rgba(255,255,255,.84);
+      --glass:rgba(255,255,255,.10);
+      --glass-strong:rgba(255,255,255,.14);
+      --glass-border:rgba(255,255,255,.22);
+      --shadow:0 24px 60px rgba(0,0,0,.28);
+
+      --games:#00cbf8;
+      --creator:#fafafa;
+      --login:#ffffff;
+
+      --modal-bg:#ffffff;
+      --modal-text:#1c2740;
+      --modal-muted:#66738a;
+      --modal-line:#e5ebf5;
+      --modal-brand:#2f6fed;
+      --modal-brand-2:#38bdf8;
+      --modal-creator:#243447;
+      --danger:#dc2626;
     }
 
-    .wrap{
-      max-width:900px;
-      margin:0 auto;
-      padding:24px;
+    *{ box-sizing:border-box; margin:0; padding:0; }
+
+    html, body{
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      font-family:'Outfit', Arial, sans-serif;
+      background:#0a0f1d;
+      color:var(--text);
     }
 
-    .card{
-      background:#fff;
-      border-radius:16px;
-      padding:20px;
-      box-shadow:0 6px 18px rgba(0,0,0,0.08);
-      margin-bottom:20px;
+    body{ position:relative; }
+
+    /* =========================
+       BACKGROUND SCENE
+       ========================= */
+    .scene{
+      position:fixed;
+      inset:0;
+      overflow:hidden;
+      z-index:0;
+      background:#0a0f1d;
     }
 
-    h1,h2{
-      margin-top:0;
+    .bg-scroll{
+      position:absolute;
+      inset:0;
+      overflow:hidden;
     }
 
-    .row{
+    /* .bg-track{
       display:flex;
-      gap:12px;
-      flex-wrap:wrap;
+      width:200vw;
+      height:100%;
+      animation:bgMove 65s linear infinite;
+      will-change:transform;
+    }
+
+    .bg-panel{
+      flex:0 0 100vw;
+      height: 100%;
+      background-image:url('./icons/GeAAposter.png');
+      background-repeat:no-repeat;
+      background-size:100% auto;
+      background-position:center;
+      min-height: 100%;
+    }
+
+    @keyframes bgMove{
+      from{ transform:translateX(0); }
+      to{ transform:translateX(-100vw); }
+    } */
+
+    .parallax-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; /* This hides the 'overflowing' part of the long poster */
+  z-index: -1;
+}
+
+.bg-track {
+  display: flex;
+  height: 100%;
+  width: max-content; /* The secret sauce: it expands to fit the images */
+  animation: bgMove 100s linear infinite;
+  will-change: transform;
+}
+
+.bg-panel {
+  height: 100vh;
+  /* We remove 'flex: 0 0 100vw' so it doesn't squash */
+  /* We use aspect-ratio or just let the image define the width */
+  width: calc(100vh * (3000 / 1000)); /* Replace 3000/1000 with your image's actual Width/Height ratio */
+  
+  background-image: url('./icons/GeAAposter.png');
+  background-size: cover; /* Since height is 100vh, cover will now show the full width correctly */
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+@keyframes bgMove {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); } /* Moves one full image length to the left */
+}
+
+    .bg-overlay{
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at center, rgba(12,18,34,0.08) 0%, rgba(10,16,32,0.32) 52%, rgba(5,8,18,0.72) 100%),
+        linear-gradient(180deg, rgba(8,12,22,0.16) 0%, rgba(8,12,22,0.46) 100%);
+      z-index:1;
+      pointer-events:none;
+    }
+
+    .bg-stripes{
+      position:absolute;
+      inset:0;
+      z-index:2;
+      pointer-events:none;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(173,216,255,0.00) 0%,
+          rgba(173,216,255,0.00) 52%,
+          rgba(173,216,255,0.10) 52.8%,
+          rgba(255,255,255,0.18) 54.2%,
+          rgba(173,216,255,0.06) 55.6%,
+          rgba(173,216,255,0.00) 57%,
+          rgba(173,216,255,0.00) 60%,
+          rgba(173,216,255,0.09) 61.2%,
+          rgba(255,255,255,0.15) 62.4%,
+          rgba(173,216,255,0.05) 63.6%,
+          rgba(173,216,255,0.00) 65%,
+          rgba(173,216,255,0.00) 68%,
+          rgba(173,216,255,0.08) 69.2%,
+          rgba(255,255,255,0.13) 70.3%,
+          rgba(173,216,255,0.05) 71.4%,
+          rgba(173,216,255,0.00) 72.6%,
+          rgba(173,216,255,0.00) 76%,
+          rgba(173,216,255,0.07) 77%,
+          rgba(255,255,255,0.12) 78.1%,
+          rgba(173,216,255,0.04) 79.2%,
+          rgba(173,216,255,0.00) 80.3%
+        );
+      mix-blend-mode:screen;
+      opacity:.82;
+    }
+
+    .bg-vignette{
+      position:absolute;
+      inset:0;
+      box-shadow:inset 0 0 180px rgba(0,0,0,0.44);
+      z-index:3;
+      pointer-events:none;
+    }
+
+    .bg-glow{
+      position:absolute;
+      inset:-10%;
+      background:
+        radial-gradient(circle at 20% 40%, rgba(129,161,255,0.10), transparent 20%),
+        radial-gradient(circle at 80% 30%, rgba(151,113,255,0.10), transparent 18%),
+        radial-gradient(circle at 60% 80%, rgba(104,212,255,0.08), transparent 16%);
+      animation:glowDrift 14s ease-in-out infinite alternate;
+      z-index:4;
+      pointer-events:none;
+    }
+
+    @keyframes glowDrift{
+      from{ transform:translateX(-10px) translateY(0px); }
+      to{ transform:translateX(10px) translateY(-10px); }
+    }
+
+    /* =========================
+       FOREGROUND
+       ========================= */
+    .topbar{
+      position:fixed;
+      top:18px;
+      left:18px;
+      right:18px;
+      z-index:20;
+      display:flex;
+      justify-content:space-between;
       align-items:center;
+      gap:14px;
+      pointer-events:none;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.16);
+      backdrop-filter:blur(8px);
+      box-shadow:0 10px 30px rgba(0,0,0,.16);
+      pointer-events:auto;
+    }
+
+    .brand-mark{
+      width:38px;
+      height:38px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      background:linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,.08));
+      color:#fff;
+      flex:0 0 auto;
+    }
+
+    .brand-copy{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      line-height:1.1;
+    }
+
+    .brand-copy strong{
+      font-size:.98rem;
+      font-weight:800;
+      letter-spacing:.01em;
+    }
+
+    .brand-copy span{
+      font-size:.82rem;
+      color:rgba(255,255,255,.78);
+    }
+
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      pointer-events:auto;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .top-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:42px;
+      padding:10px 14px;
+      border:none;
+      border-radius:999px;
+      font:inherit;
+      font-weight:800;
+      color:#fff;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.16);
+      backdrop-filter:blur(8px);
+      cursor:pointer;
+      text-decoration:none;
+      transition:transform .18s ease, background .18s ease;
+      box-shadow:0 10px 30px rgba(0,0,0,.14);
+    }
+
+    .top-pill:hover{ transform:translateY(-1px); background:rgba(255,255,255,.16); }
+
+    .shell{
+      position:relative;
+      z-index:10;
+      width:min(92%, 760px);
+      min-height:100%;
+      margin:0 auto;
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding:90px 18px 28px;
+      animation:fadeUp 1s ease-out;
+    }
+
+    @keyframes fadeUp{
+      from{ opacity:0; transform:translateY(18px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+
+    .inner{ width:100%; }
+
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.16);
+      background:rgba(255,255,255,0.06);
+      backdrop-filter:blur(6px);
+      color:rgba(255,255,255,0.88);
+      font-size:0.92rem;
+      font-weight:700;
+      letter-spacing:0.02em;
+      margin-bottom:18px;
+    }
+
+    .title{
+      font-family:'Quicksand', sans-serif;
+      font-size:clamp(2.9rem, 7vw, 5.6rem);
+      line-height:0.96;
+      letter-spacing:-0.05em;
+      text-shadow:0 10px 30px rgba(0,0,0,0.46);
+    }
+
+    .subtitle{
+      margin:18px auto 0;
+      max-width:660px;
+      font-size:1.08rem;
+      line-height:1.7;
+      color:var(--muted);
+      text-shadow:0 6px 24px rgba(0,0,0,0.36);
+    }
+
+    .main-card{
+      width:min(100%, 540px);
+      margin:34px auto 0;
+      padding:18px;
+      background:var(--glass);
+      /* backdrop-filter:blur(16px); */
+      border:1px solid var(--glass-border);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+    }
+
+    .nav-stack{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .entry-btn{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      min-height:58px;
+      padding:16px 18px;
+      border-radius:18px;
+      text-decoration:none;
+      font-size:1rem;
+      font-weight:800;
+      color:#fff;
+      /* background:rgba(255,255,255,0.08); */
+      background: rgba(104, 212, 255, 0.295);
+      border:1px solid rgba(255,255,255,0.14);
+      transition:transform .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease;
+      cursor:pointer;
+    }
+
+    .entry-btn:hover{
+      transform:translateY(-2px);
+      background:rgba(255,255,255,0.16);
+      border-color:rgba(255,255,255,0.28);
+      box-shadow:0 14px 30px rgba(0,0,0,0.18);
+    }
+
+    .entry-btn.games{ color:var(--games); }
+    .entry-btn.creator{ color:var(--creator); }
+    .entry-btn.login{ color:var(--login); }
+
+    .footer-links{
+      margin-top:18px;
+      display:flex;
+      justify-content:center;
+      gap:18px;
+      flex-wrap:wrap;
+      font-size:0.82rem;
+      opacity:0.82;
+    }
+
+    .footer-links button{
+      color:rgba(255,255,255,0.78);
+      text-decoration:none;
+      font-weight:600;
+      background:none;
+      border:none;
+      cursor:pointer;
+      font:inherit;
+    }
+
+    .footer-links button:hover{
+      color:#fff;
+      opacity:1;
+    }
+
+    /* =========================
+       MODAL
+       ========================= */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(8,15,28,.58);
+      z-index:50;
+    }
+
+    .modal-backdrop.open{ display:flex; }
+
+    /* .modal{
+      width:min(760px,100%);
+      max-height:90vh;
+      overflow:auto;
+      border-radius:28px;
+      border:1px solid rgba(229,235,245,.95);
+      background:var(--modal-bg);
+      color:var(--modal-text);
+      box-shadow:0 22px 64px rgba(31,45,85,.24);
+    } */
+     .modal{
+  width:min(760px,100%);
+  max-height:90vh;
+  overflow:auto;
+  border-radius:28px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(16, 24, 42, 0.68);
+  color:#ffffff;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  box-shadow:
+    0 24px 80px rgba(0,0,0,.36),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+    /* .modal-head{
+      position:sticky;
+      top:0;
+      z-index:2;
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      padding:22px 22px 16px;
+      border-bottom:1px solid #edf2f7;
+      background:rgba(255,255,255,.96);
+      backdrop-filter:blur(10px);
+    }
+
+    .modal-head h4{ margin:0; }
+    .modal-head p{
+      margin:6px 0 0;
+      color:var(--modal-muted);
+      line-height:1.5;
+    } */
+
+    .modal-head{
+  position:sticky;
+  top:0;
+  z-index:2;
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  padding:22px 22px 16px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  background:rgba(18, 28, 50, 0.72);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+.modal-head h4{
+  margin:0;
+  color:#ffffff;
+  font-size:1.3rem;
+}
+
+.modal-head p{
+  margin:6px 0 0;
+  color:rgba(255,255,255,.72);
+  line-height:1.5;
+}
+    
+    .modal-close{
+      width:44px;
+      height:44px;
+      border:none;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:1.15rem;
+      font-weight:900;
+      color:#435066;
+      background:#f5f7fb;
+      border:1px solid var(--modal-line);
+      flex:0 0 auto;
+    }
+
+    .modal-body{ padding:22px; }
+
+    /* .panel{
+      background:#fbfcfe;
+      border:1px solid #e7edf4;
+      border-radius:22px;
+      padding:18px;
+      margin-bottom:16px;
+    }
+
+    .panel p{
+      margin:10px 0 0;
+      color:var(--modal-muted);
+      line-height:1.62;
+    } */
+
+    .panel{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:22px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.panel p{
+  margin:10px 0 0;
+  color:rgba(255,255,255,.74);
+  line-height:1.62;
+}
+
+.info-card{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.05);
+  border-radius:18px;
+  padding:16px;
+}
+
+.info-card h6{
+  margin:0;
+  color:#ffffff;
+}
+
+.info-card p{
+  margin:8px 0 0;
+  color:rgba(255,255,255,.72);
+  line-height:1.55;
+  font-size:.96rem;
+}
+    
+    .field-grid, .card-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .field{ display:grid; gap:8px; }
+    .field.full{ grid-column:1 / -1; }
+    /* .field label{
+      font-size:.92rem;
+      font-weight:800;
+      color:#334155;
     }
 
     input{
-      padding:12px;
-      border:1px solid #ccc;
-      border-radius:10px;
-      min-width:220px;
+      width:100%;
+      border:1px solid var(--modal-line);
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:1rem;
+      color:var(--modal-text);
+      background:#fff;
+      outline:none;
     }
 
-    button{
-      padding:12px 18px;
-      border:none;
-      border-radius:10px;
-      cursor:pointer;
-      background:#3f6df6;
-      color:#fff;
-      font-weight:600;
-    }
+    input:focus{
+      border-color:#9cb8f5;
+      box-shadow:0 0 0 4px rgba(47,111,237,.10);
+    } */
 
-    button.secondary{
-      background:#666;
-    }
+    .field label{
+  font-size:.92rem;
+  font-weight:800;
+  color:rgba(255,255,255,.88);
+}
 
-    button.danger{
-      background:#d33;
-    }
+input{
+  width:100%;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;
+  padding:13px 14px;
+  font-size:1rem;
+  color:#ffffff;
+  background:rgba(255,255,255,.08);
+  outline:none;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
 
-    .muted{
-      color:#666;
-    }
+input::placeholder{
+  color:rgba(255,255,255,.46);
+}
 
-    .success{
-      color:#0a8a35;
-      font-weight:600;
-    }
-
-    .error{
-      color:#c62828;
-      font-weight:600;
-    }
-
-    .menu{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:16px;
+input:focus{
+  border-color:rgba(139,233,255,.55);
+  box-shadow:0 0 0 4px rgba(139,233,255,.10);
+}
+    
+    .row-actions, .quick-links{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
       margin-top:16px;
     }
 
-    .menu a{
-      display:block;
-      text-decoration:none;
-      background:#eef3ff;
-      padding:18px;
+    .btn{
+      border:none;
       border-radius:14px;
-      color:#1d3f9e;
-      font-weight:700;
-      text-align:center;
+      padding:12px 16px;
+      font-weight:800;
+      font-size:.96rem;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease;
     }
 
-    .hidden{
-      display:none;
+    .btn:hover{ transform:translateY(-1px); }
+    .btn:active{ transform:translateY(0); }
+
+    .btn-primary{
+      color:#fff;
+      background:linear-gradient(135deg,var(--modal-brand),#5a8bff);
+      box-shadow:0 14px 28px rgba(47,111,237,.22);
     }
+
+    .btn-secondary{
+      color:var(--modal-text);
+      background:#fff;
+      border:1px solid var(--modal-line);
+    }
+
+    .btn-dark{
+      color:#fff;
+      background:linear-gradient(135deg,var(--modal-creator),#435d78);
+      box-shadow:0 14px 28px rgba(36,52,71,.18);
+    }
+
+    .btn-danger{
+      color:#fff;
+      background:linear-gradient(135deg,#dc2626,#ef4444);
+    }
+
+    .info-card{
+      border:1px solid #e6edf5;
+      background:#fff;
+      border-radius:18px;
+      padding:16px;
+    }
+
+    .info-card h6{ margin:0; }
+    .info-card p{
+      margin:8px 0 0;
+      color:var(--modal-muted);
+      line-height:1.55;
+      font-size:.96rem;
+    }
+
+    .status-line{
+      margin-top:14px;
+      min-height:22px;
+      color:var(--modal-muted);
+      font-size:.95rem;
+      font-weight:700;
+    }
+
+    @media (max-width:760px){
+      .topbar{
+        top:12px;
+        left:12px;
+        right:12px;
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .top-actions{ width:100%; justify-content:flex-start; }
+      .field-grid, .card-grid{ grid-template-columns:1fr; }
+
+      .shell{
+        width:min(94%, 760px);
+        padding:110px 12px 22px;
+      }
+
+      .subtitle{ font-size:1rem; }
+      .main-card{ padding:14px; border-radius:22px; }
+      .entry-btn{ min-height:54px; font-size:0.96rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .bg-track, .bg-glow, .shell{ animation:none !important; }
+    }
+
+    .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4); /* Dims the background slightly */
+  backdrop-filter: blur(8px);    /* Professional blur effect */
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  transition: opacity 0.8s ease, visibility 0.8s;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 40px;
+  border-radius: 30px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  max-width: 400px;
+}
+
+.btn-start {
+  margin-top: 25px;
+  padding: 15px 40px;
+  border-radius: 50px;
+  border: none;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: transform 0.2s;
+}
+
+.btn-start:hover { transform: scale(1.1); }
+
+/* Class to hide the modal */
+.modal-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Study Buddy</h1>
-      <div id="auth-state" class="muted">Checking login…</div>
+  <div class="scene">
+    <div class="bg-scroll">
+      <div class="bg-track">
+        <div class="bg-panel"></div>
+        <div class="bg-panel"></div>
+      </div>
+    </div>
+    <div class="bg-overlay"></div>
+    <div class="bg-stripes"></div>
+    <div class="bg-vignette"></div>
+    <div class="bg-glow"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">BG</div>
+      <div class="brand-copy">
+        <strong>BuddyGame</strong>
+        <span>Athena &amp; Aria Studio</span>
+      </div>
     </div>
 
-    <div class="card" id="auth-card">
-      <h2>Login / Register</h2>
-
-      <div class="row" style="margin-bottom:12px;">
-        <input id="auth-email" type="email" placeholder="Email" />
-        <input id="auth-password" type="password" placeholder="Password" />
-        <input id="auth-display-name" type="text" placeholder="Display name (for register)" />
-      </div>
-
-      <div class="row">
-        <button id="login-btn" type="button">Login</button>
-        <button id="register-btn" type="button">Register</button>
-        <button id="logout-btn" type="button" class="danger hidden">Logout</button>
-      </div>
-
-      <div id="auth-status" class="muted" style="margin-top:12px;">Not logged in.</div>
+    <div class="top-actions">
+      <div id="auth-slot"></div>
     </div>
+  </header>
 
-    <div class="card">
-      <h2>Games</h2>
-      <div class="menu">
-        <a href="./game/words_production_patched.html">Words Game</a>
-        <a href="./game/reading.html">Reading Game</a>
-        <a href="./game/math.html">Math Game</a>
-        <a href="./game/creator.html">Lesson Creator</a>
+  <main class="shell">
+    <div class="inner">
+      <div class="eyebrow">Athena &amp; Aria Studio</div>
+
+      <h1 class="title">BuddyGame</h1>
+
+      <p class="subtitle">
+        A playful learning world for children, and an elegant creator space for teachers,
+        parents, and storytellers.
+      </p>
+
+      <div id="overlay-gate">
+  <div class="main-card">
+    <h1>studyBuddy</h1>
+    <p>Ready to explore the Two Worlds?</p>
+
+    <div id="entry-modal" class="modal-overlay">
+  <div class="glass-card">
+    <div class="brand-badge">ATHENA & ARIA</div>
+    <h2>Ready to Explore?</h2>
+    <p>Step into the world of studyBuddy with immersive sound and magic.</p>
+    <button id="gate-start-btn" class="btn-start">BEGIN ADVENTURE</button>
+  </div>
+</div>
+
+<audio id="bg-music" loop>
+  <source src="./game/assets/The_Skyward_Path.mp3" type="audio/mpeg">
+</audio>
+    <!-- <button id="start-btn" class="btn-primary">Enter Adventure</button>
+  </div>
+</div>
+
+<audio id="bg-music" loop>
+  <source src="./game/assets/The_Skyward_Path.mp3" type="audio/mpeg">
+</audio> -->
+      
+      <!-- <div id="music-toggle">🔊</div>
+
+      <audio id="bg-music" loop>
+        <source src="./game/assets/The_Skyward_Path.mp3" type="audio/mpeg">
+      </audio> -->
+
+      <section class="main-card">
+        <nav class="nav-stack">
+          <button class="entry-btn games" id="open-games-btn" type="button">🎮 Play Games</button>
+          <button class="entry-btn creator" id="open-creator-btn" type="button">🛠️ Creator Studio</button>
+          <button class="entry-btn login" id="open-auth-main-btn" type="button">👤 Login</button>
+        </nav>
+
+        <div class="footer-links">
+          <button type="button" id="open-about-btn">About</button>
+          <button type="button" id="open-support-btn">Support</button>
+          <button type="button" id="open-privacy-btn">Privacy</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <div>
+          <h4 id="modal-title">Modal Title</h4>
+          <p id="modal-subtitle">Modal subtitle</p>
+        </div>
+        <button class="modal-close" id="modal-close-btn" type="button" aria-label="Close">×</button>
       </div>
+      <div class="modal-body" id="modal-body"></div>
     </div>
   </div>
+
+  <script src="/js/aria-widget.js"></script>
 
   <script type="module">
     import {
@@ -145,384 +863,450 @@
       setSessionExpiredHandler
     } from "./game/js/api.js";
 
-    const qs = (id) => document.getElementById(id);
+    document.addEventListener('DOMContentLoaded', () => {
+  const gateBtn = document.getElementById('gate-start-btn');
+  const entryModal = document.getElementById('entry-modal');
+  const bgMusic = document.getElementById('bg-music');
 
-    function setStatus(id, text, type = "muted"){
-      const el = qs(id);
-      el.className = type;
+  gateBtn.addEventListener('click', () => {
+    // 1. Play the music
+    bgMusic.play().catch(e => console.error("Audio failed:", e));
+    
+    // 2. Hide the modal
+    entryModal.classList.add('modal-hidden');
+    
+    // 3. Optional: Set a lower volume initially for a smooth fade-in
+    bgMusic.volume = 0;
+    let volumeInterval = setInterval(() => {
+      if (bgMusic.volume < 0.5) {
+        bgMusic.volume += 0.05;
+      } else {
+        clearInterval(volumeInterval);
+      }
+    }, 100);
+  });
+});
+
+//     const music = document.getElementById('bg-music');
+// const musicBtn = document.getElementById('music-toggle');
+
+// musicBtn.addEventListener('click', () => {
+//   if (music.paused) {
+//     music.play();
+//     musicBtn.innerHTML = '🔊'; // On state
+//   } else {
+//     music.pause();
+//     musicBtn.innerHTML = '🔇'; // Off state
+//   }
+// });
+
+// const startBtn = document.getElementById('start-btn');
+// const music = document.getElementById('bg-music');
+// const gate = document.getElementById('overlay-gate');
+
+// startBtn.addEventListener('click', () => {
+//   // 1. Play the music (Now allowed because of the click!)
+//   music.play().catch(error => console.log("Autoplay blocked:", error));
+  
+//   // 2. Fade out the entry screen
+//   gate.style.opacity = '0';
+//   setTimeout(() => gate.style.display = 'none', 500);
+// });
+
+    const modalBackdrop = document.getElementById("modal-backdrop");
+    const modalTitle = document.getElementById("modal-title");
+    const modalSubtitle = document.getElementById("modal-subtitle");
+    const modalBody = document.getElementById("modal-body");
+    const authSlot = document.getElementById("auth-slot");
+
+    let CURRENT_USER = null;
+
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function openModal(title, subtitle, html){
+      modalTitle.textContent = title;
+      modalSubtitle.textContent = subtitle;
+      modalBody.innerHTML = html;
+      modalBackdrop.classList.add("open");
+      modalBackdrop.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal(){
+      modalBackdrop.classList.remove("open");
+      modalBackdrop.setAttribute("aria-hidden", "true");
+      modalBody.innerHTML = "";
+    }
+
+    function displayNameOf(user){
+      return user?.display_name || user?.displayName || user?.name || user?.email || "User";
+    }
+
+    function setModalStatus(text, type = "muted"){
+      const el = document.getElementById("auth-status-line");
+      if(!el) return;
       el.textContent = text;
+      el.style.color =
+        type === "success" ? "#15803d" :
+        type === "error" ? "#dc2626" :
+        "#66738a";
     }
 
-    function renderAuth(user = null){
-      const logoutBtn = qs("logout-btn");
-
+    function renderTopAuth(user = null){
       if(user){
-        setStatus("auth-state", `Logged in as ${user.display_name || user.email}`, "success");
-        setStatus("auth-status", `Welcome back, ${user.display_name || user.email}`, "success");
-        logoutBtn.classList.remove("hidden");
+        const name = escapeHtml(displayNameOf(user));
+        authSlot.innerHTML = `
+          <button class="top-pill" id="open-account-btn" type="button">Welcome, ${name}</button>
+          <button class="top-pill" id="logout-top-btn" type="button">Logout</button>
+        `;
+
+        document.getElementById("open-account-btn").addEventListener("click", openAuthModal);
+        document.getElementById("logout-top-btn").addEventListener("click", async () => {
+          try{ await logout(); }catch{}
+          CURRENT_USER = null;
+          renderTopAuth(null);
+        });
       }else{
-        setStatus("auth-state", "Not logged in.", "muted");
-        setStatus("auth-status", "Please login or register.", "muted");
-        logoutBtn.classList.add("hidden");
+        authSlot.innerHTML = `
+          <button class="top-pill" id="open-auth-btn" type="button">Login / Register</button>
+        `;
+        document.getElementById("open-auth-btn").addEventListener("click", openAuthModal);
       }
     }
 
-    async function doLogin(){
-      try{
-        const email = qs("auth-email").value.trim();
-        const password = qs("auth-password").value;
-        const res = await login(email, password);
-        renderAuth(res.user || null);
-      }catch(err){
-        setStatus("auth-status", err.message || "Login failed", "error");
+    function authModalHtml(user = null){
+      if(user){
+        const safeName = escapeHtml(displayNameOf(user));
+        const safeEmail = escapeHtml(user.email || "");
+
+        return `
+          <div class="panel">
+            <h5>Signed in</h5>
+            <p>You are currently signed in and Creator access is available for your account.</p>
+
+            <div class="card-grid" style="margin-top:16px;">
+              <div class="info-card">
+                <h6>Name</h6>
+                <p>${safeName}</p>
+              </div>
+              <div class="info-card">
+                <h6>Email</h6>
+                <p>${safeEmail || "No email available"}</p>
+              </div>
+            </div>
+
+            <div class="row-actions">
+              <button class="btn btn-dark" type="button" id="open-creator-from-auth">Open Creator</button>
+              <button class="btn btn-danger" type="button" id="modal-logout-btn">Logout</button>
+            </div>
+
+            <div class="status-line" id="auth-status-line">You are logged in.</div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="panel">
+          <h5>Account access</h5>
+          <p>Login for Creator and cloud-based lesson tools, or register a new account.</p>
+
+          <div class="field-grid" style="margin-top:16px;">
+            <div class="field">
+              <label for="auth-email">Email</label>
+              <input id="auth-email" type="email" placeholder="you@example.com" />
+            </div>
+            <div class="field">
+              <label for="auth-password">Password</label>
+              <input id="auth-password" type="password" placeholder="Enter password" />
+            </div>
+            <div class="field full">
+              <label for="auth-display-name">Display name for registration</label>
+              <input id="auth-display-name" type="text" placeholder="Parent or Teacher name" />
+            </div>
+          </div>
+
+          <div class="row-actions">
+            <button class="btn btn-primary" type="button" id="modal-login-btn">Login</button>
+            <button class="btn btn-dark" type="button" id="modal-register-btn">Register</button>
+          </div>
+
+          <div class="status-line" id="auth-status-line">Not logged in.</div>
+        </div>
+
+        <div class="card-grid">
+          <div class="info-card">
+            <h6>Games</h6>
+            <p>Games stay easy to access from the homepage.</p>
+          </div>
+          <div class="info-card">
+            <h6>Creator</h6>
+            <p>Creator works best with login for account-based saving and management.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function wireAuthModal(user = null){
+      if(user){
+        const logoutBtn = document.getElementById("modal-logout-btn");
+        const creatorBtn = document.getElementById("open-creator-from-auth");
+        if(logoutBtn){
+          logoutBtn.addEventListener("click", async () => {
+            try{ await logout(); }catch{}
+            CURRENT_USER = null;
+            renderTopAuth(null);
+            closeModal();
+          });
+        }
+        if(creatorBtn){
+          creatorBtn.addEventListener("click", () => {
+            window.location.href = "./game/creator.html";
+          });
+        }
+        return;
+      }
+
+      const loginBtn = document.getElementById("modal-login-btn");
+      const registerBtn = document.getElementById("modal-register-btn");
+
+      if(loginBtn){
+        loginBtn.addEventListener("click", async () => {
+          const email = document.getElementById("auth-email")?.value?.trim() || "";
+          const password = document.getElementById("auth-password")?.value || "";
+
+          try{
+            setModalStatus("Logging in...");
+            const result = await login(email, password);
+            CURRENT_USER = result?.user || getSavedUser() || null;
+            renderTopAuth(CURRENT_USER);
+            setModalStatus("Login successful.", "success");
+            setTimeout(closeModal, 450);
+          }catch(err){
+            setModalStatus(err?.message || "Login failed.", "error");
+          }
+        });
+      }
+
+      if(registerBtn){
+        registerBtn.addEventListener("click", async () => {
+          const email = document.getElementById("auth-email")?.value?.trim() || "";
+          const password = document.getElementById("auth-password")?.value || "";
+          const displayName = document.getElementById("auth-display-name")?.value?.trim() || "";
+
+          try{
+            setModalStatus("Registering...");
+            const result = await register(email, password, displayName);
+            CURRENT_USER = result?.user || getSavedUser() || null;
+            renderTopAuth(CURRENT_USER);
+            setModalStatus("Registration successful.", "success");
+            setTimeout(closeModal, 450);
+          }catch(err){
+            setModalStatus(err?.message || "Register failed.", "error");
+          }
+        });
       }
     }
 
-    async function doRegister(){
-      try{
-        const email = qs("auth-email").value.trim();
-        const password = qs("auth-password").value;
-        const displayName = qs("auth-display-name").value.trim();
-        const res = await register(email, password, displayName);
-        renderAuth(res.user || null);
-      }catch(err){
-        setStatus("auth-status", err.message || "Register failed", "error");
+    function openAuthModal(){
+      openModal(
+        CURRENT_USER ? "Account" : "Authorization",
+        CURRENT_USER
+          ? "Account access and Creator availability."
+          : "Login or register to unlock Creator and cloud features.",
+        authModalHtml(CURRENT_USER)
+      );
+      wireAuthModal(CURRENT_USER);
+    }
+
+    function gamesModalHtml(){
+      return `
+        <div class="panel">
+          <h5>Quick access learning activities</h5>
+          <p>
+            Games are designed for simple use at home, in classrooms, and during guided sessions.
+            Open the activity you need and start learning right away.
+          </p>
+
+          <div class="quick-links">
+            <a class="btn btn-primary" href="./game/words/words.html">Words</a>
+            <a class="btn btn-primary" href="./game/reading/reading.html">Reading</a>
+          </div>
+        </div>
+
+        <div class="card-grid">
+          <div class="info-card">
+            <h6>Words</h6>
+            <p>Vocabulary, spelling, memory, and practice modes for everyday learning.</p>
+          </div>
+          <div class="info-card">
+            <h6>Reading</h6>
+            <p>Story flow, sentence practice, flash play, and speaking-based activities.</p>
+          </div>
+          <div class="info-card">
+            <h6>Fast entry</h6>
+            <p>No complicated setup for families who just want to start learning.</p>
+          </div>
+          <div class="info-card">
+            <h6>Flexible use</h6>
+            <p>Useful for home, tutoring, daycare, and classroom support.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function creatorModalHtml(){
+      const lockedNote = CURRENT_USER
+        ? "Your account is ready for Creator tools and future publishing workflows."
+        : "Login is required for Creator access. Creator is designed for educators, authors, and content publishers.";
+
+      const actionHtml = CURRENT_USER
+        ? `<a class="btn btn-dark" href="./game/creator.html">Open Creator</a>`
+        : `<button class="btn btn-dark" type="button" id="creator-login-cta">Login to unlock Creator</button>`;
+
+      return `
+        <div class="panel">
+          <h5>Create, organize, publish, and grow educational content.</h5>
+          <p>
+            Creator is designed for professionals who want to build meaningful learning content for children.
+            It supports educators, daycare providers, tutors, storybook authors, comic creators, and future
+            educational sellers who want a cleaner workflow for authoring, organizing, publishing, and eventually
+            selling their work.
+          </p>
+
+          <div class="status-line" style="margin-top:14px;">${lockedNote}</div>
+
+          <div class="quick-links">
+            ${actionHtml}
+          </div>
+        </div>
+
+        <div class="card-grid">
+          <div class="info-card">
+            <h6>Built for educators</h6>
+            <p>Create classroom-ready lessons, guided activities, and reusable learning materials.</p>
+          </div>
+          <div class="info-card">
+            <h6>Built for authors</h6>
+            <p>Design storybooks, comic-style reading content, and creative educational experiences.</p>
+          </div>
+          <div class="info-card">
+            <h6>Built for growth</h6>
+            <p>Manage your library in one place and prepare for publishing, sharing, and future marketplace sales.</p>
+          </div>
+          <div class="info-card">
+            <h6>Professional workflow</h6>
+            <p>Keep content creation separate from gameplay so the workspace feels more focused and more professional.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function infoModalHtml(kind){
+      if(kind === "about"){
+        return `
+          <div class="panel">
+            <h5>About BuddyGame</h5>
+            <p>BuddyGame is a learning world by Athena &amp; Aria Studio for children, families, teachers, and creators. It separates easy gameplay from more professional creation tools.</p>
+          </div>
+        `;
       }
+      if(kind === "support"){
+        return `
+          <div class="panel">
+            <h5>Support</h5>
+            <p>For now, support lives inside your direct project workflow. Later, this can link to help pages, FAQs, or a contact form.</p>
+          </div>
+        `;
+      }
+      return `
+        <div class="panel">
+          <h5>Privacy</h5>
+          <p>BuddyGame is being designed with child-friendly simplicity, parent oversight, and a more careful content workflow for educators and creators.</p>
+        </div>
+      `;
+    }
+
+    function openCreatorModal(){
+      openModal(
+        "Creator",
+        "A publishing workspace for educators and children’s content creators.",
+        creatorModalHtml()
+      );
+
+      const cta = document.getElementById("creator-login-cta");
+      if(cta){
+        cta.addEventListener("click", openAuthModal);
+      }
+    }
+
+    function wireMainButtons(){
+      document.getElementById("modal-close-btn").addEventListener("click", closeModal);
+
+      modalBackdrop.addEventListener("click", (e) => {
+        if(e.target === modalBackdrop) closeModal();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if(e.key === "Escape" && modalBackdrop.classList.contains("open")){
+          closeModal();
+        }
+      });
+
+      document.getElementById("open-games-btn").addEventListener("click", () => {
+        openModal(
+          "Games",
+          "Quick access to learning activities and practice flows.",
+          gamesModalHtml()
+        );
+      });
+
+      document.getElementById("open-creator-btn").addEventListener("click", openCreatorModal);
+      document.getElementById("open-auth-main-btn").addEventListener("click", openAuthModal);
+
+      document.getElementById("open-about-btn").addEventListener("click", () => {
+        openModal("About", "What BuddyGame is trying to become.", infoModalHtml("about"));
+      });
+      document.getElementById("open-support-btn").addEventListener("click", () => {
+        openModal("Support", "Help and next steps.", infoModalHtml("support"));
+      });
+      document.getElementById("open-privacy-btn").addEventListener("click", () => {
+        openModal("Privacy", "A simple overview.", infoModalHtml("privacy"));
+      });
+    }
+
+    function handleSessionExpired(){
+      CURRENT_USER = null;
+      renderTopAuth(null);
     }
 
     async function initAuth(){
       const savedUser = getSavedUser();
-      if(savedUser){
-        renderAuth(savedUser);
-      }else{
-        renderAuth(null);
+      CURRENT_USER = savedUser || null;
+      renderTopAuth(CURRENT_USER);
+
+      try{
+        const result = await bootAuth();
+        if(result?.ok && result.user){
+          CURRENT_USER = result.user;
+        }else{
+          CURRENT_USER = getSavedUser() || null;
+        }
+      }catch{
+        CURRENT_USER = getSavedUser() || null;
       }
 
-      const result = await bootAuth();
-      if(result.ok && result.user){
-        renderAuth(result.user);
-      }else{
-        renderAuth(null);
-      }
-    }
-
-    function handleSessionExpired(){
-      renderAuth(null);
-      setStatus("auth-status", "Session expired. Please login again.", "error");
+      renderTopAuth(CURRENT_USER);
     }
 
     setSessionExpiredHandler(handleSessionExpired);
-
-    qs("login-btn").addEventListener("click", doLogin);
-    qs("register-btn").addEventListener("click", doRegister);
-    qs("logout-btn").addEventListener("click", () => {
-      logout();
-      renderAuth(null);
-      setStatus("auth-status", "Logged out.", "success");
-    });
-
+    wireMainButtons();
     initAuth();
   </script>
 </body>
 </html>
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Study Buddy</title>
-  <style>
-    body{
-      font-family: Arial, sans-serif;
-      background:#f4f6ff;
-      margin:0;
-      padding:24px;
-      color:#222;
-    }
-    .wrap{
-      max-width:900px;
-      margin:0 auto;
-    }
-    .card{
-      background:#fff;
-      border-radius:16px;
-      padding:20px;
-      margin-bottom:20px;
-      box-shadow:0 8px 24px rgba(0,0,0,.08);
-    }
-    h1,h2{
-      margin-top:0;
-    }
-    .menu{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:14px;
-      margin-top:14px;
-    }
-    button{
-      width:100%;
-      padding:16px;
-      font-size:18px;
-      border-radius:12px;
-      border:none;
-      background:#4a7dff;
-      color:white;
-      cursor:pointer;
-      font-weight:700;
-    }
-    button.secondary{
-      background:#666;
-    }
-    .row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-    }
-    input{
-      width:100%;
-      box-sizing:border-box;
-      padding:12px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      margin:8px 0 14px;
-      font-size:16px;
-    }
-    .muted{
-      color:#666;
-      font-size:14px;
-    }
-    .success{
-      color:#0a8a3a;
-      font-weight:700;
-    }
-    .error{
-      color:#c62828;
-      font-weight:700;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>Study Buddy</h1>
-
-    <div class="card">
-      <h2>Login</h2>
-      <div class="row">
-        <div>
-          <label>Email</label>
-          <input id="login-email" type="email" placeholder="parent@example.com" />
-        </div>
-        <div>
-          <label>Password</label>
-          <input id="login-password" type="password" placeholder="password" />
-        </div>
-      </div>
-
-      <div class="row">
-        <button id="login-btn">Login</button>
-        <button id="logout-btn" class="secondary">Logout</button>
-      </div>
-
-      <div id="login-status" class="muted" style="margin-top:12px;">Checking login...</div>
-    </div>
-
-    <div class="card">
-      <h2>Open a page</h2>
-      <div class="menu">
-        <button onclick="go('game/words.html')">Words Game</button>
-        <button onclick="go('game/reading.html')">Reading Game</button>
-        <button onclick="go('game/math.html')">Math Game</button>
-        <button onclick="go('game/creator.html')">Parent Lesson Creator</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    function go(page){
-      window.location.href = page;
-    }
-  </script>
-
-  <script type="module">
-    import { login, logout, getToken, apiGet } from "./game/js/api.js";
-
-    const qs = (id) => document.getElementById(id);
-
-    function setStatus(text, type="muted"){
-      const el = qs("login-status");
-      el.className = type;
-      el.textContent = text;
-    }
-
-    async function refreshLoginState(){
-      const token = getToken();
-
-      if(!token){
-        setStatus("Not logged in.");
-        return;
-      }
-
-      try{
-        const res = await apiGet("/api/auth/me");
-
-        if(res.ok && res.user){
-          setStatus(`Logged in as ${res.user.display_name || res.user.email}`, "success");
-        }else{
-          setStatus("Saved login is invalid. Please log in again.", "error");
-          logout();
-        }
-      }catch(err){
-        console.error(err);
-        setStatus("Could not verify login.", "error");
-      }
-    }
-
-    qs("login-btn").addEventListener("click", async () => {
-      const email = qs("login-email").value.trim();
-      const password = qs("login-password").value;
-
-      const res = await login(email, password);
-
-      if(res.ok){
-        setStatus(`Logged in as ${res.user.display_name || res.user.email}`, "success");
-      }else{
-        setStatus(res.error || "Login failed.", "error");
-      }
-    });
-
-    qs("logout-btn").addEventListener("click", () => {
-      logout();
-      setStatus("Logged out.");
-    });
-
-    refreshLoginState();
-  </script>
-</body>
-</html> -->
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Study Buddy</title>
-  <style>
-    :root {
-      --bg: #f4f7ff;
-      --card: #ffffff;
-      --text: #1b2440;
-      --accent: #4a7dff;
-      --accent-2: #7a57ff;
-      --muted: #617099;
-      --shadow: 0 12px 30px rgba(50, 70, 130, 0.12);
-      --radius: 22px;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      color: var(--text);
-      background: linear-gradient(180deg, #eef3ff 0%, #f9fbff 100%);
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-    }
-    .wrap {
-      width: min(980px, 100%);
-    }
-    .hero {
-      text-align: center;
-      margin-bottom: 22px;
-    }
-    .hero h1 {
-      margin: 0 0 10px;
-      font-size: clamp(32px, 5vw, 54px);
-    }
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 18px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
-      margin-top: 28px;
-    }
-    .card {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 22px;
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-      display: block;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(50, 70, 130, 0.18);
-    }
-    .badge {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      color: white;
-      margin-bottom: 14px;
-    }
-    .words { background: var(--accent); }
-    .reading { background: #0ea5a8; }
-    .math { background: var(--accent-2); }
-    .card h2 {
-      margin: 0 0 8px;
-      font-size: 24px;
-    }
-    .card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 22px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="hero">
-      <h1>Study Buddy</h1>
-      <p>Choose a game mode to start learning.</p>
-    </div>
-
-    <div class="grid">
-      <a class="card" href="./game/words.html">
-        <span class="badge words">Words</span>
-        <h2>Words Game</h2>
-        <p>Vocabulary, image cards, spelling, and Warrior mode.</p>
-      </a>
-
-      <a class="card" href="./game/reading.html">
-        <span class="badge reading">Reading</span>
-        <h2>Reading Game</h2>
-        <p>Sentence reading, speaking practice, and future progress tracking.</p>
-      </a>
-
-      <a class="card" href="./game/math.html">
-        <span class="badge math">Math</span>
-        <h2>Math Game</h2>
-        <p>Starter page for your future math games and parent-controlled lessons.</p>
-      </a>
-    </div>
-
-    <div class="footer">
-      Frontend pages live in <code>game/</code>. Backend lives in <code>server/</code>.
-    </div>
-  </div>
-</body>
-</html> -->
