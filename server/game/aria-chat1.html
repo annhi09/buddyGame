@@ -516,87 +516,30 @@
       };
 
       instance.onresult = (event) => {
-  if (isAriaTalking || isThinking) return;
+        if(isAriaTalking || isThinking) return;
+        clearTimeout(silenceTimer);
 
-  clearTimeout(silenceTimer);
+        let interim = "";
+        for(let i = event.resultIndex; i < event.results.length; i++){
+          const text = event.results[i][0].transcript;
+          if(event.results[i].isFinal) finalTranscript += text + " ";
+          else interim += text;
+        }
 
-  let finalText = "";
-  let interimText = "";
+        const currentText = (finalTranscript + interim).trim();
+        if(!currentText) return;
 
-  for (let i = event.resultIndex; i < event.results.length; i++) {
-    const transcript = event.results[i][0].transcript.trim();
+        userBox.textContent = `You: "${currentText}"`;
 
-    if (event.results[i].isFinal) {
-      finalText += transcript + " ";
-    } else {
-      interimText += transcript + " ";
-    }
-  }
-
-  const displayText = (finalText || interimText).trim();
-  if (!displayText) return;
-
-  userBox.textContent = `You: "${displayText}"`;
-
-  if (finalText.trim()) {
-    finalTranscript = finalText.trim();
-  }
-
-  silenceTimer = setTimeout(() => {
-    const message = (finalTranscript || interimText).trim();
-    finalTranscript = "";
-
-    if (message && message !== lastSentMessage) {
-      lastSentMessage = message;
-      sendToAria(message);
-    }
-  }, 1100);
-};
-
-      // instance.onresult = (event) => {
-      //   if(isAriaTalking || isThinking) return;
-      //   clearTimeout(silenceTimer);
-
-      //   let interim = "";
-      //   let finalText = "";
-
-      //   // IMPORTANT:
-      //   // Web Speech returns the whole recognition buffer repeatedly.
-      //   // Do NOT keep appending interim text, or you get:
-      //   // "hello hello hello hello...".
-      //   for(let i = event.resultIndex; i < event.results.length; i++){
-      //     const transcript = (event.results[i][0].transcript || "").trim();
-      //     if(!transcript) continue;
-
-      //     if(event.results[i].isFinal){
-      //       finalText += transcript + " ";
-      //     }else{
-      //       interim += transcript + " ";
-      //     }
-      //   }
-
-      //   if(finalText.trim()){
-      //     finalTranscript = finalText.trim();
-      //   }
-
-      //   const currentText = (finalTranscript || interim).trim();
-      //   if(!currentText) return;
-
-      //   userBox.textContent = `You: "${currentText}"`;
-
-      //   silenceTimer = setTimeout(() => {
-      //     const message = (finalTranscript || currentText).trim();
-      //     finalTranscript = "";
-
-      //     const normalized = message.toLowerCase().replace(/\s+/g, " ").trim();
-      //     const lastNormalized = lastSentMessage.toLowerCase().replace(/\s+/g, " ").trim();
-
-      //     if(message && normalized !== lastNormalized){
-      //       lastSentMessage = message;
-      //       sendToAria(message);
-      //     }
-      //   }, 950);
-      // };
+        silenceTimer = setTimeout(() => {
+          const message = currentText.trim();
+          finalTranscript = "";
+          if(message && message !== lastSentMessage){
+            lastSentMessage = message;
+            sendToAria(message);
+          }
+        }, 1150);
+      };
 
       return instance;
     }
@@ -667,8 +610,7 @@
         speak(reply);
       }catch(error){
         console.error(error);
-        speak("I reached the server, but my AI route had an error. Please check the Render logs.");
-        // speak("I lost connection to my Aria voice route. Please check the server.");
+        speak("I lost connection to my StudyBuddy voice route. Please check the server.");
       }
     }
 

@@ -26,7 +26,7 @@ console.log("Checking Aria's Key:", process.env.GEMINI_API_KEY ? "✅ Key Found"
 // --- 2. Initialize Aria ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const aiModel = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash-lite",
+    model: "gemini-2.5-flash",
     systemInstruction: "You are Aria Core, Long's personal AI assistant. You can help with general questions, coding, business ideas, creative projects... Be warm, smart, concise, and helpful."
     // systemInstruction: "You are Aria, the AI assistant for StudyBuddy. You help parents understand progress and games. You are warm, encouraging, and concise. Refer to the kids as Athena and Aria when appropriate."
 });
@@ -124,45 +124,91 @@ app.post("/api/aria-chat", async (req, res) => {
     const { message = "", context = "Unknown page" } = req.body || {};
 
     // Read the real progress table shape first
+    // const progressColumns = db.prepare(`PRAGMA table_info(progress)`).all();
+    // const columnNames = progressColumns.map((c) => c.name);
+
+    // let recentProgress = [];
+
+    // if (columnNames.length) {
+    //   const safeColumns = [
+    //     "id",
+    //     "user_id",
+    //     "lesson_id",
+    //     "lessonId",
+    //     "stars",
+    //     "streak",
+    //     "score",
+    //     "bestScore",
+    //     "completed",
+    //     "updated_at",
+    //     "created_at",
+    //   ].filter((name) => columnNames.includes(name));
+
+    //   if (safeColumns.length) {
+    //     const orderColumn = columnNames.includes("updated_at")
+    //       ? "updated_at"
+    //       : columnNames.includes("created_at")
+    //         ? "created_at"
+    //         : safeColumns[0];
+
+    //     recentProgress = db.prepare(`
+    //       SELECT ${safeColumns.join(", ")}
+    //       FROM progress
+    //       ORDER BY ${orderColumn} DESC
+    //       LIMIT 3
+    //     `).all();
+    //   }
+    // }
+
+    // const dataReport = recentProgress.length > 0
+    //   ? JSON.stringify(recentProgress)
+    //   : "No recent activity recorded yet.";
+
+    let dataReport = "No progress data connected.";
+
+try {
+  if (db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='progress'`).get()) {
     const progressColumns = db.prepare(`PRAGMA table_info(progress)`).all();
     const columnNames = progressColumns.map((c) => c.name);
 
     let recentProgress = [];
 
-    if (columnNames.length) {
-      const safeColumns = [
-        "id",
-        "user_id",
-        "lesson_id",
-        "lessonId",
-        "stars",
-        "streak",
-        "score",
-        "bestScore",
-        "completed",
-        "updated_at",
-        "created_at",
-      ].filter((name) => columnNames.includes(name));
+    const safeColumns = [
+      "id",
+      "user_id",
+      "lesson_id",
+      "lessonId",
+      "stars",
+      "streak",
+      "score",
+      "bestScore",
+      "completed",
+      "updated_at",
+      "created_at",
+    ].filter((name) => columnNames.includes(name));
 
-      if (safeColumns.length) {
-        const orderColumn = columnNames.includes("updated_at")
-          ? "updated_at"
-          : columnNames.includes("created_at")
-            ? "created_at"
-            : safeColumns[0];
+    if (safeColumns.length) {
+      const orderColumn = columnNames.includes("updated_at")
+        ? "updated_at"
+        : columnNames.includes("created_at")
+          ? "created_at"
+          : safeColumns[0];
 
-        recentProgress = db.prepare(`
-          SELECT ${safeColumns.join(", ")}
-          FROM progress
-          ORDER BY ${orderColumn} DESC
-          LIMIT 3
-        `).all();
-      }
+      recentProgress = db.prepare(`
+        SELECT ${safeColumns.join(", ")}
+        FROM progress
+        ORDER BY ${orderColumn} DESC
+        LIMIT 3
+      `).all();
     }
 
-    const dataReport = recentProgress.length > 0
+    dataReport = recentProgress.length
       ? JSON.stringify(recentProgress)
       : "No recent activity recorded yet.";
+  }
+} catch (dbErr) {
+  console.warn("Aria progress lookup skipped:", dbErr.message);
+}
 
       const prompt = `
 SYSTEM CONTEXT:
