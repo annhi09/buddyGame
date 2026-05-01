@@ -79,6 +79,7 @@ try {
       id TEXT PRIMARY KEY,
       pack_id TEXT NOT NULL,
       admin_user_id TEXT,
+      reviewer_user_id TEXT,
       action TEXT NOT NULL,
       note TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -86,6 +87,21 @@ try {
   `);
 } catch (err) {
   console.warn("Skipping pack_review_events table creation:", err.message);
+}
+
+try {
+  const cols = db.prepare(`PRAGMA table_info(pack_review_events)`).all();
+  const names = cols.map(c => c.name);
+
+  if (!names.includes("admin_user_id")) {
+    db.exec(`ALTER TABLE pack_review_events ADD COLUMN admin_user_id TEXT;`);
+  }
+
+  if (!names.includes("reviewer_user_id")) {
+    db.exec(`ALTER TABLE pack_review_events ADD COLUMN reviewer_user_id TEXT;`);
+  }
+} catch (err) {
+  console.warn("Skipping pack_review_events column migration:", err.message);
 }
 
 function columnExists(tableName, columnName) {
