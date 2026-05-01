@@ -27,7 +27,7 @@ console.log("Checking Aria's Key:", process.env.GEMINI_API_KEY ? "✅ Key Found"
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const aiModel = genAI.getGenerativeModel({ 
     model: "gemini-2.5-flash-lite",
-    systemInstruction: "You are Aria Core, Long's personal AI assistant. You can help with general questions, coding, business ideas, creative projects, and StudyBuddy when asked. Be warm, smart, concise, and helpful."
+    systemInstruction: "You are Aria Core, Long's personal AI assistant. You can help with general questions, coding, business ideas, creative projects... Be warm, smart, concise, and helpful."
     // systemInstruction: "You are Aria, the AI assistant for StudyBuddy. You help parents understand progress and games. You are warm, encouraging, and concise. Refer to the kids as Athena and Aria when appropriate."
 });
 
@@ -174,7 +174,7 @@ USER QUESTION:
 "${message}"
 
 INSTRUCTION:
-Answer the user's question directly. Only talk about StudyBuddy if the user asks about StudyBuddy, lessons, games, progress, Athena & Aria Studio, or learning features.
+Answer the user's question directly.
 `;
 
 //     const prompt = `
