@@ -73,6 +73,21 @@ try {
   // column already exists
 }
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pack_review_events (
+      id TEXT PRIMARY KEY,
+      pack_id TEXT NOT NULL,
+      admin_user_id TEXT,
+      action TEXT NOT NULL,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+} catch (err) {
+  console.warn("Skipping pack_review_events table creation:", err.message);
+}
+
 function columnExists(tableName, columnName) {
   const rows = db.prepare(`PRAGMA table_info(${tableName})`).all();
   return rows.some(row => row.name === columnName);
@@ -200,7 +215,12 @@ function rebuildPacksTableForApprovedStatus() {
 
 try {
   if (tableExists("packs") && !packsAllowsApprovedStatus()) {
-      rebuildPacksTableForApprovedStatus();
+    try {
+        rebuildPacksTableForApprovedStatus();
+      } catch (e) {
+        console.warn("Skipping packs rebuild:", e.message);
+      }
+      // rebuildPacksTableForApprovedStatus();
     }
 } catch (err) {
   console.error("DB migration failed: rebuild packs for approved status", err);
