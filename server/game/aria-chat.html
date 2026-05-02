@@ -699,14 +699,22 @@
       const selectedVoice = chooseVoice();
       if(selectedVoice) utterance.voice = selectedVoice;
 
+      // utterance.onstart = () => {
+      //   isAriaTalking = true;
+      //   animateMouth(text);
+      // };
+
+      isAriaTalking = true;
+      animateMouth(text);
+
       utterance.onstart = () => {
         isAriaTalking = true;
-        animateMouth(text);
       };
 
       const finish = () => {
         isAriaTalking = false;
         clearInterval(mouthTimer);
+        mouthTimer = null;
         setFrame("neutral");
 
         if(assistantEnabled){
